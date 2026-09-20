@@ -36,6 +36,8 @@ export type BatchSheetData = {
   splitLiquidGrams: number | null;
   /** The vm's stamped PCSF (see AppliedPostCookSuperfat). */
   postCookSuperfat: AppliedPostCookSuperfat | null;
+  /** useRecipeViewModel.cookFactor — the oils print at formulation weight × this. */
+  cookFactor: number;
   extrasGrams: number;
   /** The Fragrance & colorants section as the vm computed it (see lib/computeScentColor). */
   scentColor: ComputedScentColor;

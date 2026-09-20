@@ -304,7 +304,7 @@ test('trimming an uneven split never lets the oils sum above the new total', () 
 test('each method shows a plain-language explanation that changes with the selection', () => {
   render(<Harness process="hp" initial={ONE_PCSF} />);
   // Subtract is the default — its explanation is shown.
-  expect(screen.getByText(/trims the lye/i)).toBeTruthy();
+  expect(screen.getByText(/trims every recipe oil/i)).toBeTruthy();
   fireEvent.click(screen.getByRole('radio', { name: 'Append (add oil)' }));
   expect(screen.getByText(/on top after the cook/i)).toBeTruthy();
 });

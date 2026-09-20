@@ -85,7 +85,7 @@ test('postCookSuperfat is null when off, and its grams fold into batchWeightWith
     grams: expect.any(Number),
     // Append mode: the applied-state flag AND the method ride on the object, stamped by
     // the vm — consumers gate on the method without re-reading settings.
-    isExtra: true,
+    reserveApplied: false,
     method: 'append',
     deliveredSuperfatPercent: expect.any(Number),
   });
@@ -1271,4 +1271,36 @@ test('a recipe with no acid is untouched by the compensation path', () => {
   probe((v) => { vm = v as { baseBatchGrams: number; batchMassGrams: number }; }, {});
   const v = vm as { baseBatchGrams: number; batchMassGrams: number };
   expect(v.batchMassGrams).toBe(v.baseBatchGrams);
+});
+
+test('subtract trims the recipe to its cook weight: cookFactor, LS anhydrous soap and batch weight (HP:5684-5703, LS:1543)', () => {
+  // Same LS shape the file's other liquid-soap probes use (KOH, ratio water, a dilution target).
+  const pcsf = {
+    lyeType: 'koh' as const,
+    waterMode: 'lye_water_ratio' as const,
+    lyeWaterRatio: '2',
+    superfatPercent: '2',
+    soapConcentrationPercent: '30',
+    postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '10' }],
+  };
+  let append: any;
+  let subtract: any;
+  probe((vm) => { append = vm; }, { ...pcsf, postCookSuperfatMethod: 'append' }, 'ls');
+  probe((vm) => { subtract = vm; }, { ...pcsf, postCookSuperfatMethod: 'subtract' }, 'ls');
+
+  expect(append.cookFactor).toBe(1);
+  expect(subtract.cookFactor).toBeCloseTo(0.9);
+  // The formulation stays on the target oil weight; the cook uses 90% of it.
+  expect(subtract.totalOilGrams).toBeCloseTo(append.totalOilGrams);
+  // Anhydrous soap = the oils that were saponified + their alkali, in BOTH methods.
+  expect(append.dilution.anhydrousGrams).toBeCloseTo(append.totalOilGrams + append.result.lyeWeightGrams);
+  expect(subtract.dilution.anhydrousGrams).toBeCloseTo(0.9 * subtract.totalOilGrams + subtract.result.lyeWeightGrams);
+  // The PCSF oil is weighed separately in both methods and rides into the batch weight.
+  expect(subtract.postCookSuperfat.reserveApplied).toBe(true);
+  expect(append.postCookSuperfat.reserveApplied).toBe(false);
+  expect(subtract.batchWeightWithExtras).toBeCloseTo(
+    0.9 * subtract.totalOilGrams + subtract.result.lyeWeightGrams + subtract.result.waterWeightGrams + subtract.postCookSuperfat.grams,
+  );
+  // Following the sheet literally now lands on the claimed superfat: trimmed oils + PCSF = target.
+  expect(0.9 * subtract.totalOilGrams + subtract.postCookSuperfat.grams).toBeCloseTo(subtract.totalOilGrams);
 });

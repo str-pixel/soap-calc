@@ -255,9 +255,10 @@ export default function App() {
         splitLiquids: vm.splitLiquidRows
           .filter(({ grams }) => grams != null && grams > 0)
           .map(({ row, grams }) => ({ key: row.key, name: row.name, grams: grams as number })),
-        // vm.postCookSuperfat already carries isExtra (AppliedPostCookSuperfat) — pass
+        // vm.postCookSuperfat already carries reserveApplied (AppliedPostCookSuperfat) — pass
         // the stamped object through instead of re-pairing the flag by hand.
         postCookSuperfat: vm.postCookSuperfat,
+        cookFactor: vm.cookFactor,
         scentColor: vm.scentColor,
       }),
     [
@@ -266,8 +267,8 @@ export default function App() {
       lyeGrams,
       vm.batchWeightWithExtras,
       vm.splitLiquidRows,
-      vm.splitLiquidGrams,
       vm.postCookSuperfat,
+      vm.cookFactor,
       vm.scentColor,
     ],
   );
@@ -504,6 +505,7 @@ export default function App() {
       cureEstimate={vm.cureEstimate}
       labelWeight={vm.labelWeight}
       totalOilGrams={vm.totalOilGrams}
+      cookFactor={vm.cookFactor}
     />
   );
 

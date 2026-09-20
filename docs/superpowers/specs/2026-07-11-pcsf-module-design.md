@@ -110,3 +110,8 @@ Checked against `docs/multi-process-roadmap.md`:
 - **Consistency:** subtract reuses the existing lye result via a pure `scaleLyeResult` (core), keeping the recipe-oil basis intact for additives/dilution/mold-sizer; DOS guidance extends the existing insights engine; seeds extend the existing process-defaults; the method setting rides the existing settings spread.
 - **Scope:** one focused HP feature; the invasive part (subtract) is contained to `scaleLyeResult` + the VM's lye/batch fork; no core-lye/property change.
 - **Ambiguity:** the corrected subtract mechanism (scale the lye view, not the oil basis), the DOS threshold, the seed values, and the method default are all pinned.
+
+## Superseded 2026-09-19
+
+- "Dilution needs no change" is withdrawn. Anhydrous soap is the oils that went through the cook plus their alkali (LS:1543); under subtract those oils are the formulation × cookFactor. The PCSF oil is not soap in either method.
+- The manifest, batch sheet and pricing now list the recipe oils at their cook weight (formulation × cookFactor) and the PCSF oil as a separately weighed material (HP:5684-5703, HP:5563-5566). `AppliedPostCookSuperfat.isExtra` became `reserveApplied`; the PCSF oil counts as an extra in both methods.

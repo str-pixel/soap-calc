@@ -72,7 +72,7 @@ const clampPct = (value: string): string => {
 // Plain-language descriptions of the two post-cook superfat methods (original wording).
 const PCSF_METHOD_HELP: Record<'append' | 'subtract', string> = {
   subtract:
-    'Holds the superfat oils back from the recipe and trims the lye to match, so the batch still totals your target oil weight and the superfat comes out at exactly the number you set.',
+    'Trims every recipe oil by the post-cook share and sizes the lye to the trimmed oils; the post-cook oil is weighed separately, so the batch still totals your target oil weight and the superfat comes out at exactly the number you set.',
   append:
     'Stirs the superfat oils in on top after the cook, leaving the base recipe untouched. Simplest to weigh, but the real superfat lands a little below the number you set because the base wasn’t reduced.',
 };

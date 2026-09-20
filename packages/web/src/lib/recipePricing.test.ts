@@ -119,18 +119,19 @@ describe('buildRecipePricingContext (deep-review)', () => {
     const out = buildRecipePricingContext({
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1450,
       splitLiquids: [],
-      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }], isExtra: true },
+      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }] },
     });
     expect(out.oilLines.some((o) => o.oilId === 'jojoba-oil' && o.grams === 50)).toBe(true);
   });
 
-  it('leaves a subtract-mode (reserved) superfat out — those grams are already priced', () => {
-    const out = buildRecipePricingContext({
-      lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1400,
-      splitLiquids: [],
-      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }], isExtra: false },
+  it('prices the trimmed recipe oils and the separately weighed PCSF oil under subtract', () => {
+    const ctx = buildRecipePricingContext({
+      lines: [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }],
+      computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1500, splitLiquids: [],
+      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }] },
+      cookFactor: 0.95,
     });
-    expect(out.oilLines.some((o) => o.oilId === 'jojoba-oil')).toBe(false);
+    expect(ctx.oilLines.map((l) => [l.oilId, l.grams])).toEqual([['olive-oil', 950], ['jojoba-oil', 50]]);
   });
 
   it('exposes an enabled split liquid as a priceable material', () => {

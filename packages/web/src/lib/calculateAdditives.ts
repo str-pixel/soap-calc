@@ -96,16 +96,17 @@ export type ComputedPostCookSuperfat = {
   grams: number;
 };
 
-/** A PCSF with its applied state riding ON the object — the only shape any consumer
- * downstream of the view model sees. `isExtra: false` means the subtract reserve was
- * actually applied (cookFactor < 1): the grams are held back from the recipe oils and
- * the lye was scaled. `method` is the maker's setting, carried so a surface can tell an
- * appended oil (delivered whatever the main superfat says) from a subtract reserve that
- * the lye-excess guard left unapplied — both are isExtra:true, but only the second has
- * nothing to add up. Stamped ONCE in useRecipeViewModel beside cookFactor; there is no
- * separate flag to pair with it, stale or otherwise. */
+/** The vm's stamped post-cook superfat — the one object every surface downstream of the
+ * view model sees. `reserveApplied` is true when subtract mode actually trimmed the recipe:
+ * every recipe oil and the lye were scaled by the view model's cookFactor (1 − Σ PCSF %), so
+ * the sheet lists the oils at their cook weights and the PCSF oil, weighed separately, brings
+ * the batch back to the target oil weight — the HP method ("PCSF% × Total Oil Weight = PCSF
+ * weight, then Total Oil Weight − PCSF = starting soap calculator weight"). False for append,
+ * and for a subtract reserve the lye-excess guard left unapplied (`method` tells those apart).
+ * Stamped ONCE in useRecipeViewModel beside cookFactor; there is no separate flag to pair
+ * with it, stale or otherwise. */
 export type AppliedPostCookSuperfat = ComputedPostCookSuperfat & {
-  isExtra: boolean;
+  reserveApplied: boolean;
   method: 'append' | 'subtract';
   /** What the batch actually delivers with this reserve in (core deliveredSuperfatPercent,
    * method-aware), or null when there is nothing to add up: a subtract reserve the lye-excess
@@ -115,11 +116,11 @@ export type AppliedPostCookSuperfat = ComputedPostCookSuperfat & {
 };
 
 /** Total off-recipe grams added to the batch: additives + trace split liquid + the
- * post-cook superfat when it is an extra (not actually reserved from the recipe oils).
- * Single source of truth for the view model, ResultsPanel, and BatchSheet. The applied
- * state is read off the stamped object — never re-derived from the raw method string,
- * since a subtract reserve under a lye excess is method:'subtract' but never actually
- * applied (see useRecipeViewModel's cookFactor guard). */
+ * post-cook superfat oil.
+ * Single source of truth for the view model, ResultsPanel, and BatchSheet. The PCSF oil
+ * counts here whatever the method is, so no applied state is read: an applied subtract
+ * reserve trims the recipe oils it makes room for (useRecipeViewModel's cookFactor), it
+ * does not take the PCSF grams back out of the batch. */
 export function computeExtrasGrams(
   additives: Array<{ grams: number }>,
   splitLiquidGrams: number | null,
@@ -130,7 +131,9 @@ export function computeExtrasGrams(
   scentExtrasGrams = 0,
 ): number {
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  const pcsfGrams = postCookSuperfat?.isExtra ? postCookSuperfat.grams : 0;
+  // The PCSF oil is weighed separately in BOTH methods (HP:5563-5566): in subtract mode the
+  // recipe oils were trimmed to make room for it, so it is still real mass added to the pot.
+  const pcsfGrams = postCookSuperfat?.grams ?? 0;
   return additiveGrams + (splitLiquidGrams ?? 0) + pcsfGrams + scentExtrasGrams;
 }
 
