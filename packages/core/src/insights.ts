@@ -650,8 +650,10 @@ export const INSIGHT_RULES: InsightRule[] = [
     // message on the combined total, not per-additive, since it's the total dose that
     // tunnels/overheats the batch. The MECHANISM (sugar mass relative to oil mass) is
     // process-independent, but the TOLERANCE is not: an insulated CP mold traps the heat
-    // (ceiling 4), while an HP open cook and an LS high-temp paste both run sugars to ~5
-    // (LS sources endorse 1–5% of oils). Under HP the sum upstream already excludes yogurt
+    // (ceiling 4), while an HP open cook runs sugars to ~5 and an LS high-temp paste runs to
+    // 6 — the catalog's own LS range (LS:1069 "between 1-6% Total Oil Weight"); the 1–5%
+    // figures elsewhere in the LS book are its 30-minute-method chapter (LS:2665-2752), a
+    // different process. Under HP the sum upstream already excludes yogurt
     // (hp_yogurt_water covers it), so the HP copy names only the counted sources; CP/LS
     // keep yogurt in the sum and the copy. See sugarTotalPercent's doc above for how a
     // solution-dosed LS additive still resolves to its true %-of-oil here.
@@ -1183,11 +1185,13 @@ export const INSIGHT_RULES: InsightRule[] = [
     processes: ['ls'],
     // A post-cook superfat needs an emulsifier in liquid soap: the added oil is never
     // saponified, and without one it floats off instead of staying suspended. Fires only
-    // while no polysorbate line is in the recipe; five keyword checks cover the common
-    // custom-name spellings (polysorbate / poly 80 / tween / tween80 / poly-80) since
+    // while no polysorbate 80 line is in the recipe; five keyword checks cover the common
+    // custom-name spellings (polysorbate 80 / poly 80 / poly-80 / tween 80 / tween80) since
     // wordBoundaryMatch is a literal \b<keyword>\b match and no single keyword covers all
     // of them — 'Tween80' and 'Poly-80' in particular have no word boundary before the
-    // digits, so the space-delimited keywords above miss them.
+    // digits, so the space-delimited keywords above miss them. Every keyword requires the
+    // "80": polysorbate 20 is the fragrance emulsifier (LS:1274), so bare "polysorbate" or
+    // "tween" alone must not satisfy this rule.
     check: (input) => {
       const pcsf = input.postCookSuperfatPercent ?? 0;
       if (!Number.isFinite(pcsf) || pcsf < 0.5) return null;
