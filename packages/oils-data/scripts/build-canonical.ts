@@ -33,7 +33,8 @@ import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { IODINE_CORRECTIONS } from '../src/iodine-corrections.js';
-import { classifyProfileIodineDeviations } from '../src/profile-iodine-deviations.js';
+import { KNOWN_PROFILE_SAP_DEVIATIONS } from '../src/profile-sap-deviations.js';
+import { classifyProfileIodineDeviations, KNOWN_PROFILE_IODINE_DEVIATIONS } from '../src/profile-iodine-deviations.js';
 import { classifyExternalReferenceDeviations } from '../src/external-reference-deviations.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
@@ -493,8 +494,11 @@ function main() {
   const knownOilKeys = new Set([...oilIds, ...usedSlugs, ...excludedOilIds]);
   const oilKeyedEntries = [
     ...Object.keys(supplementalInci.inciCorrections),
+    ...Object.keys(supplementalInci.byOilId),
     ...Object.keys(LEGACY_SAP_CORRECTIONS),
     ...Object.keys(IODINE_CORRECTIONS),
+    ...Object.keys(KNOWN_PROFILE_SAP_DEVIATIONS),
+    ...Object.keys(KNOWN_PROFILE_IODINE_DEVIATIONS),
     ...Object.keys(OIL_DISPLAY_NAMES),
     ...Object.keys(OIL_ALLERGEN_ORIGINS),
     ...WAX_ESTER_OIL_IDS,
@@ -516,6 +520,16 @@ function main() {
     console.warn(
       `  Oil-keyed entries aimed at excluded oils (inert — drop them, or leave them ready if the oil may return): ${inertOilKeys.join(', ')}`,
     );
+  }
+
+  // An excluded id that no longer matches any legacy row is dead weight in excluded-oils.json
+  // (the rows it named have since left soap_oils.json). Warn, so the next exclusion prunes it.
+  // Compared against the legacy slugs, not usedSlugs — that set is filled AFTER the exclusion
+  // `continue`, so every excluded id is absent from it by construction.
+  const legacySlugs = new Set(legacy.oils.map((leg) => slugify(leg.name)));
+  const deadExcludedIds = [...excludedOilIds].filter((id) => !legacySlugs.has(id) && !oilIds.has(id));
+  if (deadExcludedIds.length) {
+    console.warn(`  Excluded ids matching no legacy row (prune from excluded-oils.json): ${deadExcludedIds.join(', ')}`);
   }
 
   // A SAP correction only applies when the oil has no FNWL match. If a built oil carries a

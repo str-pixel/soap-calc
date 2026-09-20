@@ -330,8 +330,11 @@ function main() {
   }
 
   // Iodine corrections are the single source of truth (build applies, validate asserts).
+  // Keyed by BUILD SLUG in both places: the build looks up `baseSlug` before the id override
+  // is applied, so the validator maps each emitted id back to its slug the same way.
+  const slugByEmittedId = new Map(Object.entries(OIL_ID_OVERRIDES).map(([slug, id]) => [id, slug]));
   for (const oil of db.oils) {
-    const corr = IODINE_CORRECTIONS[oil.id];
+    const corr = IODINE_CORRECTIONS[slugByEmittedId.get(oil.id) ?? oil.id];
     if (corr && oil.iodine !== corr.iodine) {
       errors.push(`${oil.id}: built iodine ${oil.iodine} != IODINE_CORRECTIONS ${corr.iodine}`);
     }
