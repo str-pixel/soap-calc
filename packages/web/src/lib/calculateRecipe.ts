@@ -65,10 +65,6 @@ export function calculateRecipe(
     }
   }
 
-  for (const err of resolved.errors) {
-    if (!inputErrors.includes(err)) inputErrors.push(err);
-  }
-
   if (inputErrors.length || !parsed.ok) {
     return { result: null, inputErrors, linePercents: new Map(), displayTotals: null };
   }

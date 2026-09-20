@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from './recipe';
 
 describe('resolveLineWeights', () => {
-  it('derives percents from gram weights', async () => {
+  it('resolves gram weights and the recipe oil total', async () => {
     const { resolveLineWeights } = await import('./resolveLineWeights');
     const result = resolveLineWeights(
       [
@@ -12,7 +12,6 @@ describe('resolveLineWeights', () => {
       DEFAULT_SETTINGS,
     );
     expect(result.lines[0].weightGrams).toBe(600);
-    expect(result.lines[0].weightPercent).toBe(60);
     expect(result.recipeOilWeightGrams).toBe(1000);
   });
 });

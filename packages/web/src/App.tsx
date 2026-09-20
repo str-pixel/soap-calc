@@ -642,7 +642,7 @@ export default function App() {
             process={process}
             onChange={setProcess}
             processVariant={settings.processVariant}
-            onVariantChange={(processVariant) => setSettings({ ...settings, processVariant })}
+            onVariantChange={(processVariant) => setSettings((s) => ({ ...s, processVariant }))}
           />
         </div>
       </header>
@@ -750,7 +750,7 @@ export default function App() {
                 dilution={vm.dilution}
                 soapConcentrationPercent={settings.soapConcentrationPercent}
                 onSoapConcentrationChange={(value) =>
-                  setSettings({ ...settings, soapConcentrationPercent: value })
+                  setSettings((s) => ({ ...s, soapConcentrationPercent: value }))
                 }
                 weightUnit={weightUnit}
                 altLiquidWaterGrams={vm.splitLiquidPasteWater}
@@ -760,7 +760,7 @@ export default function App() {
                 cookWaterGrams={vm.cookWaterGrams}
                 gradualWaterGrams={settings.gradualWaterGrams}
                 onGradualWaterChange={(value) =>
-                  setSettings({ ...settings, gradualWaterGrams: value })
+                  setSettings((s) => ({ ...s, gradualWaterGrams: value }))
                 }
                 measuredPasteGrams={measuredPasteGrams}
                 dilutionScope={dilutionScope}

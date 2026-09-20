@@ -9,22 +9,18 @@ function parseNonNegative(value: string): number | null {
 export type ResolvedLine = {
   line: RecipeLine;
   weightGrams: number;
-  weightPercent: number;
   weightError?: string;
 };
 
 export type ResolvedWeights = {
   lines: ResolvedLine[];
   recipeOilWeightGrams: number;
-  errors: string[];
 };
 
 export function resolveLineWeights(
   lines: RecipeLine[],
   _settings: RecipeSettings,
 ): ResolvedWeights {
-  const errors: string[] = [];
-
   const resolved = lines.map((line) => {
     const weightGrams = parseNonNegative(line.weightGrams);
     const weightError =
@@ -32,7 +28,6 @@ export function resolveLineWeights(
     return {
       line,
       weightGrams: weightGrams ?? 0,
-      weightPercent: 0,
       weightError,
     };
   });
@@ -42,12 +37,5 @@ export function resolveLineWeights(
     0,
   );
 
-  for (const row of resolved) {
-    row.weightPercent =
-      recipeOilWeightGrams > 0 && row.weightGrams > 0
-        ? (row.weightGrams / recipeOilWeightGrams) * 100
-        : 0;
-  }
-
-  return { lines: resolved, recipeOilWeightGrams, errors };
+  return { lines: resolved, recipeOilWeightGrams };
 }

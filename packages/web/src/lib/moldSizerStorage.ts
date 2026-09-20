@@ -2,12 +2,9 @@ import {
   DEFAULT_MOLD_SIZER_INPUT,
   type MoldSizerInput,
 } from './moldSizer';
+import { isRecord } from './isRecord';
 
 const MOLD_SIZER_KEY = 'soap-calc:mold-sizer';
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 export function loadMoldSizerInput(): MoldSizerInput {
   try {

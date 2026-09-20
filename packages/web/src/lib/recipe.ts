@@ -8,8 +8,10 @@ import type { AdditiveStage, DoseBasis, DoseUnit, GelMode, TarLyeTreatment, Wate
 import { isWeightUnit, type WeightUnit } from './weightUnits';
 import { defaultVariantFor, isProcessVariantId, processForLyeType, type ProcessVariantId } from './process';
 import { formatInputNumber } from './format';
+import { isRecord } from './isRecord';
 
 export type { WeightUnit };
+export { isRecord } from './isRecord';
 
 export type RecipeLine = {
   key: string;
@@ -268,11 +270,6 @@ export function normalizeSplitLiquid(
     amount,
     addAt,
   };
-}
-
-/** The saved-shape guard every loader shares (drafts, files, the scent section). */
-export function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
 }
 
 // A row's percent, clamped into [0, 100] — a recipe file (hand-edited, imported, or from a
@@ -620,6 +617,7 @@ export function normalizeSettings(
   // Bound once, the way normalizeAdditiveLine's rawCatalogId is, rather than calling
   // settingString twice for the same value.
   const rawPreservativeId = settingString(partial?.preservativeId, d.preservativeId);
+  const postCookSuperfatOils = normalizePostCookSuperfatOils(partial ?? {});
   return {
     ...preserveUnknownSettings(partial),
     weightUnit,
@@ -639,11 +637,8 @@ export function normalizeSettings(
     naohPurityPercent: settingString(partial?.naohPurityPercent, d.naohPurityPercent),
     kohPurityPercent: settingString(partial?.kohPurityPercent, d.kohPurityPercent),
     batchNotes: settingString(partial?.batchNotes, d.batchNotes, MAX_NOTES_LENGTH),
-    postCookSuperfatTotalPercent: normalizePostCookSuperfatTotal(
-      partial ?? {},
-      normalizePostCookSuperfatOils(partial ?? {}),
-    ),
-    postCookSuperfatOils: normalizePostCookSuperfatOils(partial ?? {}),
+    postCookSuperfatTotalPercent: normalizePostCookSuperfatTotal(partial ?? {}, postCookSuperfatOils),
+    postCookSuperfatOils,
     soapConcentrationPercent: settingString(partial?.soapConcentrationPercent, d.soapConcentrationPercent),
     soapingTempF: settingString(partial?.soapingTempF, d.soapingTempF),
     // An id the table no longer resolves becomes a custom entry KEEPING the typed name —
