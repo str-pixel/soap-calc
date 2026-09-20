@@ -11,11 +11,25 @@ import { rangeVerdict } from './range-verdict.js';
 import {
   additiveMatches,
   additiveNameMatches,
+  matchingAdditiveEntries,
   recipeOilMatches,
+  wordBoundaryMatch,
   type NamedCatalogEntry,
   type NamedOilEntry,
 } from './keyword-match.js';
 import { LS_ZONES } from './ls-method.js';
+
+/** Magnesium-bearing salts: warned against outright (magnesium_salt_scum, CP:10623-10626),
+ * so every "salt" advisory filters them out first — a maker must never read "do not use"
+ * and "add it gradually" about the same line. */
+const MAGNESIUM_SALT_KEYWORDS = ['epsom', 'magnesium', 'dead sea'] as const;
+function withoutMagnesiumSalts(
+  entries: NamedCatalogEntry[] | undefined,
+): NamedCatalogEntry[] | undefined {
+  return entries?.filter(
+    (entry) => !MAGNESIUM_SALT_KEYWORDS.some((keyword) => wordBoundaryMatch(entry.name, keyword)),
+  );
+}
 
 // Coconut-heavy proxy: lauric+myristic ≥ 55% stands in for ">75% coconut oil" — a
 // documented estimate, not a cited source constant. Process-invariant (isCoconutHeavy):
@@ -334,8 +348,9 @@ export const INSIGHT_RULES: InsightRule[] = [
     // Liquid soap (KOH) is exempt: it legitimately runs at/below 0% and is neutralized
     // after cook. Behavior-only copy; no fixed "minimum safe %" is asserted (only the
     // no-buffer case is a clear, grounded hazard).
+    // Exactly 0%: a NEGATIVE figure is a deliberate lye excess with its own rule (ls_lye_excess) and its own remedy — this copy says "0% superfat" and must not fire beside it.
     check: (input) => {
-      if (input.lyeGrams > 0 && input.superfatPercent <= 0) {
+      if (input.lyeGrams > 0 && input.superfatPercent === 0) {
         return {
           level: 'warning',
           code: 'no_superfat_margin',
@@ -643,7 +658,8 @@ export const INSIGHT_RULES: InsightRule[] = [
     params: { ceilingPercent: 4, family: 'sugar/sorbitol, honey, yogurt' },
     processOverrides: {
       hp: { ceilingPercent: 5, family: 'sugar/sorbitol, honey' },
-      ls: { ceilingPercent: 5 },
+      // LS: the catalog's own LS range for sugar/sorbitol/honey tops out at 6 (LS:1069 "between 1-6% Total Oil Weight"); the 5 this carried until 2026-09-19 was HP's.
+      ls: { ceilingPercent: 6 },
     },
     // The ceiling and additive-family wording are parameterized above; the sentence SHAPE
     // still differs by process (HP's cook can "scorch or volcano", CP/LS's batch can
@@ -743,7 +759,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     // process — the reaction is with soap, not with a process step.
     check: (input) => {
       if (
-        ['epsom', 'magnesium', 'dead sea'].some((keyword) =>
+        MAGNESIUM_SALT_KEYWORDS.some((keyword) =>
           additiveNameMatches(input.additiveEntries, keyword),
         )
       ) {
@@ -845,7 +861,11 @@ export const INSIGHT_RULES: InsightRule[] = [
       // WAS effective, so it counts. Same follow-the-experiment rule as the doses.
       const protected_ =
         additiveMatches(input.additiveEntries, 'bht', 'bht') ||
-        additiveMatches(input.additiveEntries, 'roe', 'rosemary') ||
+        // The antioxidant is "Rosemary Oleoresin Extract (ROE)" (LS:1018, HP:4871, CP:5566);
+        // the herb and its essential oil are fragrance/botanicals (CP:9941) and protect nothing.
+        additiveMatches(input.additiveEntries, 'roe', 'roe') ||
+        additiveNameMatches(input.additiveEntries, 'oleoresin') ||
+        additiveNameMatches(input.additiveEntries, 'rosemary extract') ||
         additiveMatches(input.additiveEntries, 'edta', 'edta');
       if (protected_) return null;
       return {
@@ -941,8 +961,10 @@ export const INSIGHT_RULES: InsightRule[] = [
           message:
             `The alternative liquid's own fat gets no lye, adding about ${fatShift.toFixed(1)} points of ` +
             `superfat on top of ${recipeClause} — an effective ` +
-            `${effective.toFixed(1)}%. Liquid soap clouds and separates past ~3%: lower the superfat ` +
-            `(or run a small lye excess) to absorb it.`,
+            `${effective.toFixed(1)}%. Liquid soap clouds and separates past ~3%: ` +
+            (input.superfatPercent < 0
+              ? 'increase the lye excess to absorb it.'
+              : 'lower the superfat (or run a small lye excess) to absorb it.'),
         };
       }
       return null;
@@ -1105,22 +1127,27 @@ export const INSIGHT_RULES: InsightRule[] = [
     // this ships behavior-only guidance (thickens then thins past a point) and never a
     // number.
     check: (input) => {
-      if (additiveMatches(input.additiveEntries, 'salt', 'salt')) {
-        let message =
-          'Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go.';
+      const saltLines = matchingAdditiveEntries(withoutMagnesiumSalts(input.additiveEntries), 'salt', 'salt');
+      if (saltLines.length === 0) return null;
+      // Two jobs, by stage. At the START (lye water or oils, the catalog's LS default) salt
+      // keeps the cooking soap fluid instead of a thick paste, and the soap thickens once it
+      // is diluted and cools. Stirred into DILUTED soap it thickens up to a peak, then thins
+      // past it. An unknown stage reads as the default start-of-cook use.
+      const afterDilution = saltLines.some((line) => line.addAt === 'after_cook');
+      let message = afterDilution
+        ? 'Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go.'
+        : 'Salt in the lye water or the oils keeps the soap fluid through the cook instead of setting into a thick paste; it thickens once diluted and cooled. Every recipe has a turning point past which more salt thins it, so add any later brine a little at a time.';
 
-        if (isCoconutHeavy(input)) {
-          message +=
-            ' High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body.';
-        }
-
-        return {
-          level: 'info',
-          code: 'ls_salt_thickening',
-          message,
-        };
+      if (isCoconutHeavy(input)) {
+        message +=
+          ' High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body.';
       }
-      return null;
+
+      return {
+        level: 'info',
+        code: 'ls_salt_thickening',
+        message,
+      };
     },
   },
   {
@@ -1164,12 +1191,13 @@ export const INSIGHT_RULES: InsightRule[] = [
     check: (input) => {
       const pcsf = input.postCookSuperfatPercent ?? 0;
       if (!Number.isFinite(pcsf) || pcsf < 0.5) return null;
+      // Polysorbate 80 is the oil emulsifier; polysorbate 20 is for fragrance (LS:1274).
       if (
-        additiveMatches(input.additiveEntries, 'polysorbate-80', 'polysorbate') ||
+        additiveMatches(input.additiveEntries, 'polysorbate-80', 'polysorbate 80') ||
         additiveNameMatches(input.additiveEntries, 'poly 80') ||
-        additiveNameMatches(input.additiveEntries, 'tween') ||
-        additiveNameMatches(input.additiveEntries, 'tween80') ||
-        additiveNameMatches(input.additiveEntries, 'poly-80')
+        additiveNameMatches(input.additiveEntries, 'poly-80') ||
+        additiveNameMatches(input.additiveEntries, 'tween 80') ||
+        additiveNameMatches(input.additiveEntries, 'tween80')
       ) {
         return null;
       }
@@ -1188,7 +1216,7 @@ export const INSIGHT_RULES: InsightRule[] = [
     processes: ['hp'],
     check: (input) => {
       if (
-        additiveMatches(input.additiveEntries, 'salt', 'salt') ||
+        additiveMatches(withoutMagnesiumSalts(input.additiveEntries), 'salt', 'salt') ||
         additiveMatches(input.additiveEntries, 'sodium-lactate', 'sodium lactate')
       ) {
         return {

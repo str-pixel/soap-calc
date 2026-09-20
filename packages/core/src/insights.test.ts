@@ -534,7 +534,7 @@ describe('sugar_total_high warning (total sugar-family additives, verified ceili
     for (const [process, fires] of [['cp', true], ['ls', false], ['hp', false]] as const) {
       expect(has({ ...base, process, sugarTotalPercent: 4.5 }, 'sugar_total_high')).toBe(fires);
     }
-    for (const process of ['ls', 'hp'] as const) {
+    for (const process of ['hp'] as const) {
       expect(has({ ...base, process, sugarTotalPercent: 5.5 }, 'sugar_total_high')).toBe(true);
     }
   });
@@ -545,11 +545,11 @@ describe('sugar_total_high warning (total sugar-family additives, verified ceili
     expect(has({ ...base, process: 'cp', lsGlycerinSolvent: true }, 'glycerin_solvent_dilution')).toBe(false);
   });
 
-  it('LS copy carries the ~5% figure and still names yogurt (only HP excludes it upstream)', () => {
-    const hit = analyzeFormulation({ ...base, process: 'ls', sugarTotalPercent: 5.5 }).find(
+  it('LS copy carries the ~6% figure and still names yogurt (only HP excludes it upstream)', () => {
+    const hit = analyzeFormulation({ ...base, process: 'ls', sugarTotalPercent: 6.5 }).find(
       (i) => i.code === 'sugar_total_high',
     );
-    expect(hit!.message).toContain('~5%');
+    expect(hit!.message).toContain('~6%');
     expect(hit!.message.toLowerCase()).toContain('yogurt');
   });
 
@@ -1701,5 +1701,85 @@ describe('withheldRancidityInsightCodes', () => {
       additiveEntries: [{ id: 'bht', name: 'BHT', grams: 1 }],
     } as never);
     expect(held).toEqual([]);
+  });
+});
+
+describe('review fixes 2026-09-19: insight gating and copy', () => {
+  const codesFor = (input: FormulationAnalysisInput) => analyzeFormulation(input).map((i) => i.code);
+  const messageFor = (input: FormulationAnalysisInput, code: string) =>
+    analyzeFormulation(input).find((i) => i.code === code)?.message ?? '';
+
+  it('a magnesium salt gets the scum warning and NOT the add-salt coaching (CP:10623-10626)', () => {
+    for (const process of ['ls', 'hp'] as const) {
+      const codes = codesFor({ ...base, process, additiveEntries: [{ catalogId: '', name: 'Epsom salt' }] });
+      expect(codes).toContain('magnesium_salt_scum');
+      expect(codes).not.toContain('ls_salt_thickening');
+      expect(codes).not.toContain('hp_thick_phase_suppressant');
+    }
+    // Plain salt still gets the coaching.
+    expect(codesFor({ ...base, process: 'ls', additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }] })).toContain('ls_salt_thickening');
+    expect(codesFor({ ...base, process: 'hp', additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }] })).toContain('hp_thick_phase_suppressant');
+  });
+
+  it('no_superfat_margin is the 0% case only; a lye excess is ls_lye_excess alone (LS:1161, LS:1195)', () => {
+    for (const process of ['cp', 'hp'] as const) {
+      const codes = codesFor({ ...base, process, superfatPercent: -3 });
+      expect(codes).toContain('ls_lye_excess');
+      expect(codes).not.toContain('no_superfat_margin');
+      expect(codesFor({ ...base, process, superfatPercent: 0 })).toContain('no_superfat_margin');
+    }
+  });
+
+  it('LS sugar ceiling is the catalog range top, 6% (LS:1069)', () => {
+    expect(has({ ...base, process: 'ls', sugarTotalPercent: 5.5 }, 'sugar_total_high')).toBe(false);
+    expect(has({ ...base, process: 'ls', sugarTotalPercent: 6 }, 'sugar_total_high')).toBe(false);
+    expect(has({ ...base, process: 'ls', sugarTotalPercent: 6.5 }, 'sugar_total_high')).toBe(true);
+    expect(messageFor({ ...base, process: 'ls', sugarTotalPercent: 6.5 }, 'sugar_total_high')).toContain('~6%');
+    // HP keeps its own 5.
+    expect(has({ ...base, process: 'hp', sugarTotalPercent: 5.5 }, 'sugar_total_high')).toBe(true);
+  });
+
+  it('only ROE / rosemary oleoresin / rosemary extract counts as the antioxidant, not the herb or its EO (LS:1018, CP:9941)', () => {
+    // A PUFA-heavy profile so the DOS rule is live.
+    const pufa = { ...base, process: 'cp' as const, fattyAcids: { linoleic: 40, oleic: 40, palmitic: 20 }, fattyAcidCoveragePercent: 100 };
+    const fires = (name: string, catalogId = '') => has({ ...pufa, additiveEntries: [{ catalogId, name }] }, 'dos_risk_no_antioxidant');
+    expect(fires('Dried rosemary')).toBe(true);
+    expect(fires('Rosemary powder')).toBe(true);
+    expect(fires('Rosemary oil')).toBe(true);
+    expect(fires('Rosemary essential oil')).toBe(true);
+    expect(fires('ROE (rosemary oleoresin)', 'roe')).toBe(false);
+    expect(fires('rosemary oleoresin')).toBe(false);
+    expect(fires('Rosemary extract')).toBe(false);
+    expect(fires('ROE')).toBe(false);
+  });
+
+  it('polysorbate 20 / Tween 20 do not satisfy the polysorbate-80 emulsifier prompt (LS:1274)', () => {
+    const ls = { ...base, process: 'ls' as const, postCookSuperfatPercent: 2 };
+    const fires = (name: string, catalogId = '') => has({ ...ls, additiveEntries: [{ catalogId, name }] }, 'ls_pcsf_emulsifier');
+    expect(fires('Polysorbate 20')).toBe(true);
+    expect(fires('Tween 20')).toBe(true);
+    expect(fires('Polysorbate 80', 'polysorbate-80')).toBe(false);
+    expect(fires('Polysorbate 80')).toBe(false);
+    expect(fires('Tween 80')).toBe(false);
+    expect(fires('poly 80')).toBe(false);
+  });
+
+  it('the LS fat-shift remedy never tells a recipe already at a lye excess to "run a small lye excess"', () => {
+    const atExcess = messageFor({ ...base, process: 'ls', superfatPercent: -2, lsSplitLiquidFatShiftPercent: 6 }, 'ls_split_liquid_fat_superfat');
+    expect(atExcess).not.toContain('run a small lye excess');
+    expect(atExcess).toContain('lye excess');
+    const atSuperfat = messageFor({ ...base, process: 'ls', superfatPercent: 2, lsSplitLiquidFatShiftPercent: 6 }, 'ls_split_liquid_fat_superfat');
+    expect(atSuperfat).toContain('lower the superfat');
+  });
+
+  it('LS salt copy follows the stage: start-of-cook keeps the paste fluid, after dilution thickens then thins (LS:2625, LS:3089)', () => {
+    const lyeStage = messageFor({ ...base, process: 'ls', additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)', addAt: 'lye' }] }, 'ls_salt_thickening');
+    expect(lyeStage).toMatch(/fluid/i);
+    expect(lyeStage).not.toMatch(/dilute brine gradually/i);
+    const afterDilution = messageFor({ ...base, process: 'ls', additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)', addAt: 'after_cook' }] }, 'ls_salt_thickening');
+    expect(afterDilution).toMatch(/thickens diluted liquid soap/i);
+    // No stage known → the catalog's LS default (lye water) reading.
+    const unknown = messageFor({ ...base, process: 'ls', additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }] }, 'ls_salt_thickening');
+    expect(unknown).toMatch(/fluid/i);
   });
 });
