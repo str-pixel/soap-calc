@@ -13,7 +13,7 @@ import type { ProcessId } from '../lib/process';
 import type { SplitLiquidRow } from '../lib/recipe';
 import { newSplitLiquidKey } from '../lib/recipe';
 import { splitLiquidWaterFraction, splitLiquidWaterInputState } from '../lib/calculateAdditives';
-import { budgetSizingAvailable } from '../lib/splitLiquidSizing';
+import { budgetSizingAvailable, isBudgetSizeMode } from '../lib/splitLiquidSizing';
 import type { ResolvedSplitLiquidRow } from '../lib/splitLiquidSizing';
 import { formatInputNumber } from '../lib/format';
 import { splitLiquidManualWaterHint } from '../lib/splitLiquidHint';
@@ -88,7 +88,12 @@ export function SplitLiquidPanel({
   // CP keeps showing its vinegar row after a switch to LS rather than silently losing it.
   const presetsForProcess = alternativeLiquidsForProcess(process);
   const gramsByKey = new Map(resolvedRows.map(({ row, grams }) => [row.key, grams]));
-  const totalGrams = resolvedRows.reduce((sum, { grams }) => sum + (grams ?? 0), 0);
+  // The allocation equation is lye water + BUDGET rows = target: additive-mode rows
+  // (% of oils, grams) sit on top of the budget and must not be added into it.
+  const budgetGrams = resolvedRows.reduce(
+    (sum, { row, grams }) => (isBudgetSizeMode(row.sizeMode) ? sum + (grams ?? 0) : sum),
+    0,
+  );
 
   const updateRow = (key: string, patch: Partial<SplitLiquidRow>) =>
     onChange(rows.map((row) => (row.key === key ? { ...row, ...patch } : row)));
@@ -374,14 +379,14 @@ export function SplitLiquidPanel({
             );
           })}
 
-          {allocation && totalGrams > 0 && (
+          {allocation && budgetGrams > 0 && (
             <p className="split-liquid-preview">
               {formatWeight(allocation.lyeWaterGrams, weightUnit)} lye water (
               {lyeGrams > 0 && Math.abs(allocation.lyeWaterGrams / lyeGrams - 1) > 0.005
                 ? `${(allocation.lyeWaterGrams / lyeGrams).toFixed(2)} : 1`
                 : '1 : 1'}
               ) +{' '}
-              {formatWeight(totalGrams, weightUnit)} alternative liquid ={' '}
+              {formatWeight(budgetGrams, weightUnit)} alternative liquid ={' '}
               {formatWeight(allocation.targetLiquidGrams, weightUnit)} total liquid
             </p>
           )}
