@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { waitFor, render, screen, within, cleanup, fireEvent } from '@testing-library/react';
+import { waitFor, render, screen, within, cleanup, fireEvent, act } from '@testing-library/react';
 import { loadDraft } from './lib/recipeStorage';
 import userEvent from '@testing-library/user-event';
 import { preservativeDoseGrams } from '@soap-calc/core';
@@ -967,5 +967,21 @@ describe('a recipe we cannot read is not a recipe we lost', () => {
     // "Could not read your saved recipe" alone reads as "your work is gone" and stops a
     // maker looking. The sentence has to carry the rescue, not just the failure.
     expect(status.textContent).toMatch(/kept/i);
+  });
+});
+
+describe('autosave flush on pagehide', () => {
+  it('a weight typed but not blurred survives the flush', () => {
+    vi.useFakeTimers();
+    try {
+      render(<App />);
+      const weight = screen.getByLabelText('Weight in g for Olive Oil') as HTMLInputElement;
+      fireEvent.focus(weight);
+      fireEvent.change(weight, { target: { value: '600' } });
+      act(() => { window.dispatchEvent(new Event('pagehide')); });
+      expect(loadDraft('cp')?.lines.find((l) => l.oilId === 'olive-oil')?.weightGrams).toBe('600');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

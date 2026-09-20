@@ -228,8 +228,10 @@ export default function App() {
     vesselVolumeCm3,
     measuredPasteGrams,
   });
-  useRecipeAutosave(process, recipeName, lines, settings, additives, scentColor, () =>
-    flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
+  useRecipeAutosave(
+    process, recipeName, lines, settings, additives, scentColor,
+    () => flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
+    () => inputs.flushCommittedDrafts(),
   );
 
   function handlePrintBatchSheet() {

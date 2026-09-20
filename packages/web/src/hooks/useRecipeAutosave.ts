@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { AdditiveLine, RecipeLine, RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import type { ScentColor } from '../lib/scentColor';
+import type { SyncedRecipe } from '../lib/lineWeightSync';
 import { saveDraft, hasDraft } from '../lib/recipeStorage';
 
 const AUTOSAVE_MS = 500;
@@ -14,11 +15,17 @@ export function useRecipeAutosave(
   additives: AdditiveLine[],
   scentColor: ScentColor,
   onSaveError?: () => void,
+  flushDrafts?: () => SyncedRecipe,
 ) {
   // Keep the latest callback in a ref so autosave binds to the timer without the
   // effect re-running (and re-scheduling the debounce) on every render.
   const onSaveErrorRef = useRef(onSaveError);
   onSaveErrorRef.current = onSaveError;
+
+  // The inputs hook's draft flush (commitDrafts over the live refs). Held in a ref for the
+  // same reason as onSaveError: the hide listener is registered once.
+  const flushDraftsRef = useRef(flushDrafts);
+  flushDraftsRef.current = flushDrafts;
 
   // Mirror every save input in a ref (same pattern as useRecipeEditor's linesRef/batchRef)
   // so the pagehide/visibilitychange listener below — registered once, not re-bound per
@@ -96,16 +103,28 @@ export function useRecipeAutosave(
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
+      // A field still focused holds its edit as a DRAFT (committed on blur/Enter), and a
+      // tab close or mobile background-kill does not reliably blur first. Commit the drafts
+      // now, exactly as export does (useRecipeInputs.handleExportCommitted), and save what
+      // they resolve to.
+      const synced = flushDraftsRef.current?.();
+      const lines = synced ? synced.lines : linesRef.current;
+      const settings = synced
+        ? { ...settingsRef.current, batchOilGrams: synced.batchOilGrams, batchSetByUser: synced.batchSetByUser }
+        : settingsRef.current;
+      const draftsChanged =
+        synced !== undefined &&
+        (synced.lines !== linesRef.current || synced.batchOilGrams !== settingsRef.current.batchOilGrams);
       // Dirty check instead of timer-presence: a committed edit whose debounce effect
       // hasn't run yet has no timer but still needs saving. Also re-persist when the
       // slot is EMPTY (external deletion/eviction): this tab may hold the only copy,
       // and writing into an empty slot cannot clobber another tab's newer draft.
-      if (!isDirty() && hasDraft(processRef.current)) return;
+      if (!draftsChanged && !isDirty() && hasDraft(processRef.current)) return;
       const saved = saveDraft(
         processRef.current,
         recipeNameRef.current,
-        linesRef.current,
-        settingsRef.current,
+        lines,
+        settings,
         additivesRef.current,
         scentColorRef.current,
       );
@@ -113,8 +132,8 @@ export function useRecipeAutosave(
         lastSavedRef.current = {
           process: processRef.current,
           recipeName: recipeNameRef.current,
-          lines: linesRef.current,
-          settings: settingsRef.current,
+          lines,
+          settings,
           additives: additivesRef.current,
           scentColor: scentColorRef.current,
         };

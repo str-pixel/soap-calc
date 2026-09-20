@@ -140,6 +140,21 @@ describe('useRecipeAutosave', () => {
     vi.useRealTimers();
   });
 
+  it('commits the in-flight field drafts on pagehide before saving (a tab closed mid-edit keeps the edit)', () => {
+    const lines = createStarterLines();
+    const edited = lines.map((l, i) => (i === 0 ? { ...l, weightGrams: '600' } : l));
+    const flushDrafts = vi.fn(() => ({ lines: edited, batchOilGrams: '1150', batchSetByUser: true }));
+    renderHook(() =>
+      useRecipeAutosave('cp', 'r', lines, DEFAULT_SETTINGS, [] as AdditiveLine[], SCENT, undefined, flushDrafts),
+    );
+    window.dispatchEvent(new Event('pagehide'));
+    expect(flushDrafts).toHaveBeenCalledTimes(1);
+    const draft = loadDraft('cp');
+    expect(draft?.lines[0].weightGrams).toBe('600');
+    expect(draft?.settings.batchOilGrams).toBe('1150');
+    expect(draft?.settings.batchSetByUser).toBe(true);
+  });
+
   it('removes its pagehide/visibilitychange listeners on unmount', () => {
     vi.useFakeTimers();
     const addSpy = vi.spyOn(window, 'addEventListener');
