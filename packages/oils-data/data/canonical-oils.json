@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-20T06:58:57.016Z",
+  "generatedAt": "2026-09-20T07:07:51.364Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -5940,7 +5940,7 @@
       "aliases": [
         "tamanu oil kamani"
       ],
-      "inciName": "Calophyllum Tacamahaca (Tamanu) Seed Oil",
+      "inciName": "Calophyllum Inophyllum (Tamanu) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.195,
       "sapNaoh": 0.13903743315508021,
@@ -5987,9 +5987,13 @@
           "notes": "legacy/FNWL differ by 6.2% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — Corrects the FNWL chart species for the kamani product (\"Calophyllum Tacamahaca\"): kamani is Calophyllum inophyllum (matches CALOPHYLLUM INOPHYLLUM SEED OIL); FNWL's other tamanu row (oiltamanuexpid383) agrees."
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Calophyllum Tacamahaca (Tamanu) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
+          "notes": "INCI \"Calophyllum Inophyllum (Tamanu) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",

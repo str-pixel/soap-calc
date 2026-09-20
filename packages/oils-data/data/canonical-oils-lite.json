@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-20T06:58:57.016Z",
+  "generatedAt": "2026-09-20T07:07:51.364Z",
   "idMigrations": {
     "rapeseed-oil-canola": "rapeseed-oil-high-erucic",
     "linseed-oil-flax": "flax-oil-linseed",
@@ -2634,7 +2634,7 @@
       "aliases": [
         "tamanu oil kamani"
       ],
-      "inciName": "Calophyllum Tacamahaca (Tamanu) Seed Oil",
+      "inciName": "Calophyllum Inophyllum (Tamanu) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.195,
       "sapNaoh": 0.13903743315508021,
