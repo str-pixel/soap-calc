@@ -10,7 +10,6 @@ export type LiteOilRecord = {
   sapRole?: 'triglyceride' | 'acid_neutralization';
   sapKoh: number;
   sapNaoh: number;
-  confidence?: string;
   propertiesAvailable?: boolean;
   iodine?: number;
   ins?: number;

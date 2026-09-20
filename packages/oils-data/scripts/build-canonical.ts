@@ -614,7 +614,6 @@ function main() {
       sapRole: oil.sapRole,
       sapKoh: oil.sapKoh,
       sapNaoh: oil.sapNaoh,
-      confidence: oil.confidence,
       propertiesAvailable: oil.propertiesAvailable,
       ...(oil.iodine !== undefined ? { iodine: oil.iodine } : {}),
       ...(oil.ins !== undefined ? { ins: oil.ins } : {}),
