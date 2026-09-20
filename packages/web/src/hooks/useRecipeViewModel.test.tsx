@@ -1312,6 +1312,35 @@ test('subtract trims the recipe to its cook weight: cookFactor, LS anhydrous soa
   expect(0.9 * subtract.totalOilGrams + subtract.postCookSuperfat.grams).toBeCloseTo(subtract.totalOilGrams);
 });
 
+test('the PCSF oil is deliberately out of the subtract dose base, same as append', () => {
+  // Same LS shape as the cook-weight test above.
+  const pcsf = {
+    lyeType: 'koh' as const,
+    waterMode: 'lye_water_ratio' as const,
+    lyeWaterRatio: '2',
+    superfatPercent: '2',
+    soapConcentrationPercent: '30',
+    postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '10' }],
+  };
+  let append: any;
+  let subtract: any;
+  probe((vm) => { append = vm; }, { ...pcsf, postCookSuperfatMethod: 'append' }, 'ls');
+  probe((vm) => { subtract = vm; }, { ...pcsf, postCookSuperfatMethod: 'subtract' }, 'ls');
+
+  // baseBatchGrams is the "% of batch" dose base: trimmed oils + the lye/water sized to
+  // them, in subtract; the untrimmed equivalent in append.
+  expect(subtract.baseBatchGrams).toBeCloseTo(
+    subtract.cookFactor * subtract.totalOilGrams + subtract.result.lyeWeightGrams + subtract.result.waterWeightGrams,
+  );
+  expect(append.baseBatchGrams).toBeCloseTo(
+    append.totalOilGrams + append.result.lyeWeightGrams + append.result.waterWeightGrams,
+  );
+  // Neither dose base includes the PCSF oil — it rides in only once the extras are added,
+  // in both methods (no other extras here, so the two figures cover the whole gap).
+  expect(subtract.baseBatchGrams + subtract.postCookSuperfat.grams).toBeCloseTo(subtract.batchWeightWithExtras);
+  expect(append.baseBatchGrams + append.postCookSuperfat.grams).toBeCloseTo(append.batchWeightWithExtras);
+});
+
 function useKeystrokeHarness({ process }: { process: ProcessId }) {
   const [settings, setSettings] = useState<RecipeSettings>(() =>
     normalizeSettingsWithinProcess(

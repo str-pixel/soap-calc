@@ -113,7 +113,8 @@ test('an applied subtract reserve prints the oils at their cook weight (formulat
 
   render(<BatchSheet data={data} />);
 
-  expect(screen.getAllByText('380 g').length).toBeGreaterThanOrEqual(1);
+  expect(screen.getAllByText('380 g').length).toBe(3);
+  expect(screen.queryByText('400 g')).toBeNull();
 });
 
 test('the batch sheet lye solution lists the water before the alkali, like the screen', () => {

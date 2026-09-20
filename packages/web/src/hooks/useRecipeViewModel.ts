@@ -313,6 +313,8 @@ export function useRecipeViewModel({
   // The water-bearing base batch: trimmed oils + the lye/water sized to them. The PCSF oil is
   // an extra in both methods (computeExtrasGrams), so subtract's total is
   // trimmed oils + trimmed lye/water + PCSF — numerically the target oil weight + lye + water.
+  // The PCSF oil is deliberately excluded from this dose base in both methods: it goes in
+  // after the cook, append never counted it, and subtract now agrees.
   const baseBatchGrams = pcsfReserveApplied
     ? cookOilGrams + (result?.lyeWeightGrams ?? 0) + (result?.waterWeightGrams ?? 0)
     : displayTotals?.batchWeightGrams ?? fullResult?.totalBatchWeightGrams ?? 0;
