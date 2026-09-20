@@ -96,8 +96,27 @@ function waterInput(
   };
 }
 
+const NUMERIC_SETTING_KEYS = [
+  'superfatPercent',
+  'kohBlendPercent',
+  'naohPurityPercent',
+  'kohPurityPercent',
+  'waterPercentOfOils',
+  'lyeConcentrationPercent',
+  'lyeWaterRatio',
+] as const;
+
+/** Numeric fields with surrounding whitespace trimmed, so `' '` is the same blank as `''`
+ * everywhere below (Number(' ') is 0, which read as "0 g of water" and "0% KOH"). Only the
+ * numeric fields: notes and names keep their whitespace. */
+function trimNumericSettings(settings: RecipeSettings): RecipeSettings {
+  const out = { ...settings };
+  for (const key of NUMERIC_SETTING_KEYS) out[key] = settings[key].trim();
+  return out;
+}
+
 export function parseRecipeSettings(
-  settings: RecipeSettings,
+  rawSettings: RecipeSettings,
   opts: {
     allowNegativeSuperfat?: boolean;
     /** Accepted dual-lye KOH share (kohBlendRangeFor); defaults to the bar-soap 0–50 —
@@ -105,6 +124,7 @@ export function parseRecipeSettings(
     kohBlendRange?: readonly [number, number];
   } = {},
 ): ParseSettingsResult {
+  const settings = trimNumericSettings(rawSettings);
   const errors: string[] = [];
   const minSuperfat = opts.allowNegativeSuperfat ? NEG_SUPERFAT_FLOOR : 0;
 
@@ -125,10 +145,15 @@ export function parseRecipeSettings(
     // must validate against the same [0,50] the CP definition owns, or narrowing the bar
     // range would silently leave stragglers on a stale copy.
     const [blendMin, blendMax] = opts.kohBlendRange ?? kohBlendRangeFor('cp');
-    blend = parseNonNegative(settings.kohBlendPercent, 'KOH blend %');
-    if (blend.error) errors.push(blend.error);
-    else if (blend.n! < blendMin || blend.n! > blendMax) {
-      errors.push(`KOH blend % must be between ${blendMin} and ${blendMax}`);
+    if (settings.kohBlendPercent === '') {
+      // A blank blend is not 0% KOH: dual lye has no meaning without the split.
+      errors.push(`KOH blend % is required for dual lye (${blendMin}–${blendMax})`);
+    } else {
+      blend = parseNonNegative(settings.kohBlendPercent, 'KOH blend %');
+      if (blend.error) errors.push(blend.error);
+      else if (blend.n! < blendMin || blend.n! > blendMax) {
+        errors.push(`KOH blend % must be between ${blendMin} and ${blendMax}`);
+      }
     }
   }
 
