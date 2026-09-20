@@ -190,8 +190,17 @@ export function syncBatchTotalEdit(lines: RecipeLine[], batchOilGrams: string): 
     remainder -= 1;
   }
   return baseLines.map((line, i) => {
-    if (exact[i] === null) return { ...line, weightGrams: '' };
-    return { ...line, weightGrams: String(floors[i] + (bumped.has(i) ? 1 : 0)) };
+    if (exact[i] !== null) {
+      return { ...line, weightGrams: String(floors[i] + (bumped.has(i) ? 1 : 0)) };
+    }
+    // No percent, but grams the maker typed (a line edited while the total was blank):
+    // keep them and give the line the percent those grams are of the new total. The
+    // footer flags an off-100% sum; independent entry means one edit never erases another.
+    const grams = parseNum(line.weightGrams);
+    if (grams !== null && grams > 0) {
+      return { ...line, weightPercent: formatPercent((grams / batch) * 100) };
+    }
+    return { ...line, weightGrams: '' };
   });
 }
 

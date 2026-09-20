@@ -259,3 +259,19 @@ describe('syncWeightEdit stores a real sub-gram weight', () => {
     expect(syncWeightEdit(twoLines, 'a', '453.6', '1000', true).lines[0].weightGrams).toBe('454');
   });
 });
+
+describe('syncBatchTotalEdit on a mixed recipe (some percents, some grams-only)', () => {
+  // Reachable: clear the total, set one line's percent (no grams without a total), type
+  // another line's grams (no percent without a total), then type a total.
+  const mixed: RecipeLine[] = [
+    { key: 'a', oilId: 'olive-oil', weightGrams: '', weightPercent: '60' },
+    { key: 'b', oilId: 'coconut-oil-76', weightGrams: '300', weightPercent: '' },
+    { key: 'c', oilId: 'shea-butter', weightGrams: '', weightPercent: '' },
+  ];
+  it('sizes the percent line from the total and keeps the grams line, giving it its percent', () => {
+    const out = syncBatchTotalEdit(mixed, '1000');
+    expect(out[0]).toMatchObject({ weightGrams: '600', weightPercent: '60' });
+    expect(out[1]).toMatchObject({ weightGrams: '300', weightPercent: '30' });
+    expect(out[2]).toMatchObject({ weightGrams: '', weightPercent: '' });
+  });
+});
