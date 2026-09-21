@@ -78,4 +78,22 @@ describe('formatWeight keeps sub-gram doses visible', () => {
     expect(formatWeight(2270, 'g')).toBe('2270 g');
     expect(formatWeight(453.59237, 'lb')).toBe('1 lb');
   });
+
+  it('widens the precision below 0.05 g until a digit shows (turmeric’s sourced low end on 100 g oils is 0.028 g)', () => {
+    expect(formatWeight(0.04, 'g')).toBe('0.04 g');
+    expect(formatWeight(0.028, 'g')).toBe('0.03 g');
+    expect(formatWeight(0.004, 'g')).toBe('0.004 g');
+    expect(formatWeight(0.028, 'oz')).toBe('0.001 oz');
+    // An explicit digits request is honoured as typed.
+    expect(formatWeight(0.04, 'g', 0)).toBe('0 g');
+  });
+});
+
+describe('review fixes 2026-09-21: the widening has no magnitude cap', () => {
+  it('renders a 0.001 g trace in ounce mode rather than "0 oz"', () => {
+    // 0.001 g is 3.5e-5 oz, which needs five places; the widening loop stopped at four,
+    // so a positive dose still printed as zero — the one thing this function promises not
+    // to do. Reachable from ounce mode on any trace-level colorant or preservative.
+    expect(formatWeight(0.001, 'oz')).toBe('0.00004 oz');
+  });
 });

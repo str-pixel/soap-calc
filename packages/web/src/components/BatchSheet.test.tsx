@@ -43,7 +43,8 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
     additives: [],
     splitLiquidRows: [],
     splitLiquidGrams: null,
-    postCookSuperfat: { ...postCookSuperfat, isExtra: true, method: 'append', deliveredSuperfatPercent: null },
+    postCookSuperfat: { ...postCookSuperfat, reserveApplied: false, method: 'append', deliveredSuperfatPercent: null },
+    cookFactor: 1,
     extrasGrams: postCookSuperfat.grams,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -61,11 +62,59 @@ test('prints an after-cook post-cook-superfat line with oil, grams, and percent'
 
   expect(screen.getByText(/Castor Oil/)).toBeTruthy();
   // Its own section, same vocabulary as the on-screen Full recipe — never the retired
-  // "(5% post-cook superfat)" parenthetical, and an extra (append) reserve carries no
-  // "from oils above" note.
+  // "(5% post-cook superfat)" parenthetical, and an append reserve carries no
+  // "weighed separately" note (nothing above it was trimmed).
   expect(screen.getByText('Post-cook superfat', { selector: 'h2' })).toBeTruthy();
   expect(screen.getByText(/5% of oil/)).toBeTruthy();
-  expect(screen.queryByText(/from oils above/)).toBeNull();
+  expect(screen.queryByText(/weighed separately/)).toBeNull();
+});
+
+test('an applied subtract reserve prints the oils at their cook weight (formulation × cookFactor)', () => {
+  // 400 g × 0.95 = 380 g exactly in floating point; the Oils table, the Lye-per-oil table
+  // and the Oil-weight <dd> all quote the weight the maker actually puts in the pot.
+  const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '400', weightPercent: '100' }];
+  const settings = {
+    ...DEFAULT_SETTINGS,
+    postCookSuperfatOils: [{ oilId: 'castor-oil', percent: '5' }],
+    postCookSuperfatMethod: 'subtract' as const,
+  };
+  const { result, displayTotals, linePercents } = calculateRecipe(lines, settings, 'hp');
+  if (!result || !displayTotals) throw new Error('expected a valid calculation');
+  const postCookSuperfat = computePostCookSuperfat(settings, displayTotals.recipeOilWeightGrams);
+  if (!postCookSuperfat) throw new Error('expected a computed post-cook superfat');
+
+  const data = buildBatchSheetData({
+    recipeName: 'Cook weight',
+    batchNotes: '',
+    weightUnit: 'g',
+    lyeLabel: 'NaOH',
+    settings,
+    lines,
+    linePercents,
+    result,
+    displayTotals,
+    additives: [],
+    splitLiquidRows: [],
+    splitLiquidGrams: null,
+    postCookSuperfat: { ...postCookSuperfat, reserveApplied: true, method: 'subtract', deliveredSuperfatPercent: 6.9 },
+    cookFactor: 0.95,
+    extrasGrams: postCookSuperfat.grams,
+    scentColor: emptyComputedScentColor(),
+    dilution: null,
+    neutralization: null,
+    properties: null,
+    indexes: { iodine: null, ins: null, coveragePercent: 0, missingOilIds: [] },
+    batchWeightWithExtras: displayTotals.batchWeightGrams,
+    waterModeLabel: '33% of oil weight',
+    fattyAcids: { profile: null, coveragePercent: 0, missingOilIds: [], modeledOilIds: [], coveredWeightShare: 1 },
+    insights: [],
+    process: 'hp',
+  });
+
+  render(<BatchSheet data={data} />);
+
+  expect(screen.getAllByText('380 g').length).toBe(3);
+  expect(screen.queryByText('400 g')).toBeNull();
 });
 
 test('the batch sheet lye solution lists the water before the alkali, like the screen', () => {
@@ -87,6 +136,7 @@ test('the batch sheet lye solution lists the water before the alkali, like the s
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -133,6 +183,7 @@ test('prints a "Modeled profile" note naming derived-profile oils', () => {
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -186,7 +237,8 @@ test('prints a total superfat (cook + post-cook) row', () => {
     additives: [],
     splitLiquidRows: [],
     splitLiquidGrams: null,
-    postCookSuperfat: { ...postCookSuperfat, isExtra: true, method: 'append', deliveredSuperfatPercent: 7.767 },
+    postCookSuperfat: { ...postCookSuperfat, reserveApplied: false, method: 'append', deliveredSuperfatPercent: 7.767 },
+    cookFactor: 1,
     extrasGrams: postCookSuperfat.grams,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -238,7 +290,8 @@ test('subtract + negative main superfat: no from-oils-above note and no Total su
     splitLiquidGrams: null,
     // cookFactor guard: a lye excess (superfat -2%) forces cookFactor back to 1, so the
     // subtract reserve is never actually applied — the PCSF oil is an extra either way.
-    postCookSuperfat: { ...postCookSuperfat, isExtra: true, method: 'subtract', deliveredSuperfatPercent: null },
+    postCookSuperfat: { ...postCookSuperfat, reserveApplied: false, method: 'subtract', deliveredSuperfatPercent: null },
+    cookFactor: 1,
     extrasGrams: postCookSuperfat.grams,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -254,7 +307,7 @@ test('subtract + negative main superfat: no from-oils-above note and no Total su
 
   render(<BatchSheet data={data} />);
 
-  expect(screen.queryByText(/from oils above/)).toBeNull();
+  expect(screen.queryByText(/weighed separately/)).toBeNull();
   expect(screen.queryByText('Total superfat')).toBeNull();
 });
 
@@ -283,10 +336,13 @@ test('subtract + non-negative main superfat: notes the reserve comes from the oi
     additives: [],
     splitLiquidRows: [],
     splitLiquidGrams: null,
-    // Non-negative superfat: the subtract reserve is actually applied, so the PCSF oil is
-    // reserved from the recipe oils, not an extra.
-    postCookSuperfat: { ...postCookSuperfat, isExtra: false, method: 'subtract', deliveredSuperfatPercent: 6.9 },
-    extrasGrams: 0,
+    // Non-negative superfat: the subtract reserve is actually applied, so the oils above
+    // are trimmed to make room — the PCSF oil itself is still weighed separately, an extra
+    // in both methods. A reserveApplied fixture must carry a matching (<1) cookFactor and
+    // an extrasGrams that includes the PCSF grams, or it is claiming a trim it never models.
+    postCookSuperfat: { ...postCookSuperfat, reserveApplied: true, method: 'subtract', deliveredSuperfatPercent: 6.9 },
+    cookFactor: 0.9,
+    extrasGrams: postCookSuperfat.grams,
     scentColor: emptyComputedScentColor(),
     dilution: null,
     neutralization: null,
@@ -301,7 +357,7 @@ test('subtract + non-negative main superfat: notes the reserve comes from the oi
 
   render(<BatchSheet data={data} />);
 
-  expect(screen.getByText(/from oils above/)).toBeTruthy();
+  expect(screen.getByText(/weighed separately; the oils above are already trimmed/)).toBeTruthy();
   expect(screen.getByText('Total superfat')).toBeTruthy();
 });
 
@@ -324,6 +380,7 @@ test('prints no post-cook-superfat line when absent', () => {
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -361,6 +418,7 @@ test('prints bar-property scores without a percent sign', () => {
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -415,6 +473,7 @@ test('prints the split-liquid advisory note and an explicit liquid step', () => 
     splitLiquidRows: [{ row: milkRow, grams: splitLiquidGrams }],
     splitLiquidGrams,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: splitLiquidGrams,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -455,6 +514,7 @@ test('prints the soaping temperature in both units', () => {
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -525,6 +585,7 @@ function lsSheetData(extra: {
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: dilutionOverride ?? {
@@ -570,6 +631,7 @@ function cpSheetData(extra: { lyeWaterUnverifiable?: boolean }) {
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -1436,8 +1498,11 @@ test('LS prints the Post-cook superfat section AFTER Dilution, matching the on-s
     additives: [],
     splitLiquidRows: [],
     splitLiquidGrams: null,
-    postCookSuperfat: { ...postCookSuperfat, isExtra: false, method: 'subtract', deliveredSuperfatPercent: null },
-    extrasGrams: 0,
+    // reserveApplied: true needs a matching (<1) cookFactor and an extrasGrams that
+    // includes the PCSF grams, or the fixture claims a trim it never models.
+    postCookSuperfat: { ...postCookSuperfat, reserveApplied: true, method: 'subtract', deliveredSuperfatPercent: null },
+    cookFactor: 0.9,
+    extrasGrams: postCookSuperfat.grams,
     scentColor: emptyComputedScentColor(),
     dilution,
     neutralization: null,
@@ -1482,6 +1547,7 @@ test.each([
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -1523,6 +1589,7 @@ test('the printed oils table lists heaviest first, like the on-screen Full recip
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -1605,6 +1672,7 @@ test('prints every bar property the panel shows, longevity included', () => {
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,
@@ -1660,6 +1728,7 @@ function sheetWith(overrides: Partial<BatchSheetData>): BatchSheetData {
     splitLiquidRows: [],
     splitLiquidGrams: null,
     postCookSuperfat: null,
+    cookFactor: 1,
     extrasGrams: 0,
     scentColor: emptyComputedScentColor(),
     dilution: null,

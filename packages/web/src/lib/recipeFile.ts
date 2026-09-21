@@ -13,6 +13,7 @@ import {
   type RecipeSettings,
 } from './recipe';
 import { isProcessId, PROCESS_DEFINITIONS, processForLyeType, type ProcessId } from './process';
+import { isRecord } from './isRecord';
 import { ppoOzToPercentOfOil as ppoOzToPercentOfOilCore } from './doseConverters';
 import {
   createEmptyScentColor,
@@ -77,10 +78,6 @@ export type RecipeFilePayload = {
 export type ParsedRecipeFile =
   | { ok: true; data: RecipeFilePayload }
   | { ok: false; error: string };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function roundPercentString(value: number): string {
   const rounded = Math.round(value * 100) / 100;

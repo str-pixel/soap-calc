@@ -33,6 +33,7 @@ test('an after-cook additive uses the process-aware label — LS shows "After di
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="KOH"
@@ -65,6 +66,7 @@ test('an additive renders its actual dose basis/unit label', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -85,6 +87,7 @@ test('a post-cook superfat renders an oil+grams line and a cook+post-cook total'
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -94,7 +97,7 @@ test('a post-cook superfat renders an oil+grams line and a cook+post-cook total'
       weightUnit="g"
       batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }], percentOfOil: 3, grams: 30, isExtra: true, method: 'append', deliveredSuperfatPercent: 7.767 }}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }], percentOfOil: 3, grams: 30, reserveApplied: false, method: 'append', deliveredSuperfatPercent: 7.767 }}
     />,
   );
   // Shea Butter now appears in both the post-cook-superfat line and the Full recipe list.
@@ -109,6 +112,7 @@ test('a post-cook-superfat-only batch does not claim "additives" in the batch-we
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -118,7 +122,7 @@ test('a post-cook-superfat-only batch does not claim "additives" in the batch-we
       weightUnit="g"
       batchWeightWithExtras={(displayTotals?.batchWeightGrams ?? 0) + 30}
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }], percentOfOil: 3, grams: 30, isExtra: true, method: 'append', deliveredSuperfatPercent: null }}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 3, grams: 30 }], percentOfOil: 3, grams: 30, reserveApplied: false, method: 'append', deliveredSuperfatPercent: null }}
       extrasGrams={30}
     />,
   );
@@ -131,16 +135,16 @@ test('subtract: the PCSF row carries the shared provenance phrase + batch weight
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent={DEFAULT_SETTINGS.superfatPercent}
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, isExtra: false, method: 'subtract', deliveredSuperfatPercent: null }}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, reserveApplied: true, method: 'subtract', deliveredSuperfatPercent: null }}
       batchWeightWithExtras={1234}
     />,
   );
   // The grid row and the Full recipe line quote ONE provenance phrase — no third vocabulary.
-  expect(screen.getAllByText(/from oils above \(lye reduced\)/).length).toBeGreaterThanOrEqual(2);
-  expect(screen.queryByText(/reserved, lye reduced/)).toBeNull();
+  expect(screen.getAllByText(/weighed separately; the oils above are already trimmed/).length).toBeGreaterThanOrEqual(2);
   // The panel renders the vm's batch weight, not (full displayTotals batch + PCSF grams).
   expect(figure('1234 g')).toBeTruthy();
 });
@@ -149,14 +153,15 @@ test('subtract + negative main superfat: no provenance note and no Total superfa
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent="-2"
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, isExtra: true, method: 'subtract', deliveredSuperfatPercent: null }}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, reserveApplied: false, method: 'subtract', deliveredSuperfatPercent: null }}
       batchWeightWithExtras={1234}
     />,
   );
-  expect(screen.queryByText(/lye reduced/)).toBeNull();
+  expect(screen.queryByText(/weighed separately/)).toBeNull();
   expect(screen.queryByText('Total superfat')).toBeNull();
 });
 
@@ -164,18 +169,51 @@ test('subtract + non-negative main superfat: provenance note and Total superfat 
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent="2"
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, isExtra: false, method: 'subtract', deliveredSuperfatPercent: 6.9 }}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, reserveApplied: true, method: 'subtract', deliveredSuperfatPercent: 6.9 }}
       batchWeightWithExtras={1234}
     />,
   );
-  expect(screen.getAllByText(/from oils above \(lye reduced\)/).length).toBeGreaterThanOrEqual(1);
+  expect(screen.getAllByText(/weighed separately; the oils above are already trimmed/).length).toBeGreaterThanOrEqual(1);
   expect(screen.getByText('Total superfat')).toBeTruthy();
   // The stamped subtract figure COMPOUNDS (core deliveredSuperfatPercent): 2% then a 5%
   // reserve is 100×(1−0.98×0.95) = 6.9%, not the 7.0% plain addition printed before.
   expect(figure('6.9%')).toBeTruthy();
+});
+
+test('lists the recipe oils at their cook weight when a subtract reserve is applied', () => {
+  const lines = [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000', weightPercent: '100' }];
+  const { result, displayTotals } = calculateRecipe(lines, DEFAULT_SETTINGS);
+  render(
+    <ResultsPanel
+      result={result}
+      inputErrors={[]}
+      lyeLabel="NaOH"
+      process="hp"
+      lyeType="naoh"
+      displayTotals={displayTotals}
+      weightUnit="g"
+      batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
+      totalOilGrams={displayTotals?.recipeOilWeightGrams ?? 0}
+      cookFactor={0.95}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, reserveApplied: true, method: 'subtract', deliveredSuperfatPercent: 9.75 }}
+    />,
+  );
+  // 1000 g formulation × 0.95 = the 950 g that actually goes into the pot, still 100% of the blend.
+  expect(screen.getByText(/950 g · 100%/)).toBeTruthy();
+  // The phrase appears in the results-grid row AND the Full recipe line (the neighbouring
+  // post-cook test expects ≥ 2 for the same reason), so getAllByText.
+  expect(screen.getAllByText(/weighed separately; the oils above are already trimmed/).length).toBeGreaterThanOrEqual(1);
+  // The Total batch slices must sum to the total: trimmed oils, not the formulation's 1000 g.
+  expect(screen.getByText(/oils 950 g/)).toBeTruthy();
+  // "Add in this order" must name the same total the oil lines above it add up to.
+  expect(screen.getAllByText(/950 g total/).length).toBeGreaterThanOrEqual(1);
+  // and the grid's Oil weight row is the cook weight too — the sheet's identically
+  // labelled row prints it, and the PCSF row says the oils above are already trimmed.
+  expect(figure('950 g')).toBeTruthy();
 });
 
 test('append + negative main superfat: the Total superfat row still renders — an appended oil is delivered regardless', () => {
@@ -184,10 +222,11 @@ test('append + negative main superfat: the Total superfat row still renders — 
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result} inputErrors={[]} lyeLabel="NaOH" process="hp" lyeType="naoh"
       displayTotals={displayTotals} weightUnit="g"
       superfatPercent="-5"
-      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, isExtra: true, method: 'append', deliveredSuperfatPercent: 0 }}
+      postCookSuperfat={{ oils: [{ oilId: 'shea-butter', percentOfOil: 5, grams: 50 }], percentOfOil: 5, grams: 50, reserveApplied: false, method: 'append', deliveredSuperfatPercent: 0 }}
       batchWeightWithExtras={1234}
     />,
   );
@@ -201,6 +240,7 @@ test('CP steps quote the menu soaping temperature the Full recipe opens with, no
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result} inputErrors={[]} lyeLabel="NaOH" process="cp" lyeType="naoh"
       displayTotals={displayTotals} weightUnit="g"
       batchWeightWithExtras={displayTotals?.batchWeightGrams ?? 0}
@@ -215,6 +255,7 @@ test('with no postCookSuperfat, no PCSF line or total-superfat line renders', ()
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -233,6 +274,7 @@ test('HP shows a usable-at-unmold cure window', () => {
   const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -254,6 +296,7 @@ test('CP shows a 4+ week cure and a reduced label weight', () => {
   const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -281,6 +324,7 @@ test('cure line and label-weight text are single-sourced from cureEstimate, not 
   const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -303,6 +347,7 @@ test('LS with zero water loss shows the sequester window but no separate label-w
   const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="KOH"
@@ -359,6 +404,7 @@ function LsPanelProbe({
   });
   return (
     <ResultsPanel
+      cookFactor={1}
       result={vm.result}
       inputErrors={vm.inputErrors}
       lyeLabel="KOH"
@@ -426,6 +472,7 @@ test('renders the workability timeline for CP', () => {
   const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -461,6 +508,7 @@ test('workability endpoints past 48h switch to days, earlier endpoints stay in h
   };
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -483,6 +531,7 @@ test('omits the workability block when there is no estimate (e.g. LS)', () => {
   const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="KOH"
@@ -503,6 +552,7 @@ test('shows the HP texture note and no stamp row', () => {
   const batchWeightWithExtras = displayTotals?.batchWeightGrams ?? 0;
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -540,6 +590,7 @@ test('renders the Full recipe list and process-aware Add-in-order steps', () => 
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -566,6 +617,7 @@ test('the hero label derives its chemical name from lyeType, not from the displa
   // review caught. The typed prop must win.
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="Lye"
@@ -593,6 +645,7 @@ test('a folded Full recipe stays folded across an early-return remount', () => {
     weightUnit: 'g' as const,
     batchWeightWithExtras: displayTotals?.batchWeightGrams ?? 0,
     totalOilGrams: displayTotals?.recipeOilWeightGrams ?? 0,
+    cookFactor: 1,
   };
   const { rerender } = render(<ResultsPanel {...props} />);
   const details = () =>
@@ -614,6 +667,7 @@ test('a recipe-derived cure model renders the two milestone rows instead of the 
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -650,6 +704,7 @@ test('HP with usableAtUnmold and a model shows "At unmold", not a contradictory 
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -683,6 +738,7 @@ test('a use-within model renders the shelf label, not "At its best"', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -714,6 +770,7 @@ test('a null model falls back to the fixed per-process window row', () => {
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="KOH"
@@ -742,6 +799,7 @@ test('the add-in-order CP step quotes the same unmold/cure windows as the estima
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -780,6 +838,7 @@ test('the Full recipe opens with the menu soaping temperature when provided', ()
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -799,6 +858,7 @@ test('the aggregate post-cook-superfat line names its oils heaviest first', () =
   const { result, displayTotals } = calculateRecipe(createStarterLines(), DEFAULT_SETTINGS);
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       lyeLabel="NaOH"
@@ -815,7 +875,7 @@ test('the aggregate post-cook-superfat line names its oils heaviest first', () =
           { oilId: 'castor-oil', percentOfOil: 1, grams: 10 },
           { oilId: 'shea-butter', percentOfOil: 3, grams: 30 },
         ],
-        percentOfOil: 4, grams: 40, isExtra: true, method: 'append', deliveredSuperfatPercent: null,
+        percentOfOil: 4, grams: 40, reserveApplied: false, method: 'append', deliveredSuperfatPercent: null,
       }}
     />,
   );
@@ -837,6 +897,7 @@ test('the Full recipe renders the Fragrance section with the allergen line from 
   );
   render(
     <ResultsPanel
+      cookFactor={1}
       result={result}
       inputErrors={[]}
       process="cp"

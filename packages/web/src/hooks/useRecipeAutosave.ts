@@ -96,6 +96,18 @@ export function useRecipeAutosave(
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
+      // COMMITTED state only. A field still focused holds its edit as a DRAFT, and it is
+      // tempting to resolve those drafts here so a tab closed mid-edit keeps the edit —
+      // but a draft is not yet the maker's intent. "3" on the way to "350" resolves to a
+      // 3 g line, and through syncBatchTotalEdit a half-typed TOTAL rescales every oil in
+      // the recipe. This listener also fires on visibilitychange → hidden, i.e. every
+      // mobile app-switch, so that would rewrite the recipe behind them on a gesture that
+      // is not even a close. There is no way to tell "3 meaning 3" from "3 on the way to
+      // 350", so the safe reading is the committed one: e2e/recipe-ui.spec.ts pins that a
+      // never-committed value is not what comes back after a reload. The cost is an
+      // unblurred edit lost on a hard close, which is the lesser loss by far.
+      const lines = linesRef.current;
+      const settings = settingsRef.current;
       // Dirty check instead of timer-presence: a committed edit whose debounce effect
       // hasn't run yet has no timer but still needs saving. Also re-persist when the
       // slot is EMPTY (external deletion/eviction): this tab may hold the only copy,
@@ -104,8 +116,8 @@ export function useRecipeAutosave(
       const saved = saveDraft(
         processRef.current,
         recipeNameRef.current,
-        linesRef.current,
-        settingsRef.current,
+        lines,
+        settings,
         additivesRef.current,
         scentColorRef.current,
       );
@@ -113,8 +125,8 @@ export function useRecipeAutosave(
         lastSavedRef.current = {
           process: processRef.current,
           recipeName: recipeNameRef.current,
-          lines: linesRef.current,
-          settings: settingsRef.current,
+          lines,
+          settings,
           additives: additivesRef.current,
           scentColor: scentColorRef.current,
         };

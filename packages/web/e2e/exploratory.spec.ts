@@ -519,7 +519,7 @@ test.describe('liquid soap', () => {
     await expect(
       page.locator('.panel--results .results-grid dt').filter({ hasText: /Post-cook superfat/ }).first(),
     ).toBeVisible();
-    await expect(page.locator('.panel--results')).toContainText(/from oils above \(lye reduced\)/);
+    await expect(page.locator('.panel--results')).toContainText(/weighed separately; the oils above are already trimmed/);
   });
 
   test('post-cook superfat supports more than one oil', async ({ page }) => {

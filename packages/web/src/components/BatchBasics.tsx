@@ -1,13 +1,9 @@
-import type { KeyboardEvent } from 'react';
 import type { RecipeInputs } from '../hooks/useRecipeInputs';
 import type { RecipeViewModel } from '../hooks/useRecipeViewModel';
 import { gramsStringToInputDisplay, WEIGHT_UNIT_OPTIONS, WEIGHT_UNITS, type WeightUnit } from '../lib/weightUnits';
 import { LedgerRow } from './LedgerRow';
 import { SegRadioGroup } from './SegRadioGroup';
-
-const commitOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
-  if (e.key === 'Enter') e.currentTarget.blur();
-};
+import { commitOnEnter } from '../lib/commitOnEnter';
 
 type BatchBasicsProps = {
   weightUnit: WeightUnit;

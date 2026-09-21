@@ -20,13 +20,14 @@ import {
 } from '@soap-calc/core';
 
 /** The one provenance phrase every surface appends to an APPLIED subtract reserve — the
- * results-grid row, the Full recipe line, and the printed sheet. "from oils above" says
- * where the grams come from; "(lye reduced)" explains why the lye figures run below plain
- * SAP-table math. Empty for an extra. Fails SAFE: only `false` earns the note, so a PCSF
- * that somehow arrives without its applied state reads as extra weight (harmless) rather
- * than as a reserve the lye was never scaled for. */
-export function postCookSuperfatProvenance(isExtra: boolean): string {
-  return isExtra === false ? ' · from oils above (lye reduced)' : '';
+ * results-grid row, the Full recipe line, and the printed sheet. The PCSF oil is weighed on
+ * its own; the recipe oils listed above it are already trimmed by the cook factor to make
+ * room, so the manifest's oils + this line = the target oil weight. Empty for append and
+ * for an unapplied reserve. Fails safe: only `reserveApplied === true` prints the claim —
+ * anything else, including a type-bypassing caller's `undefined`, prints nothing, since a
+ * false claim of trimming is the harmful direction to be wrong in. */
+export function postCookSuperfatProvenance(reserveApplied: boolean): string {
+  return reserveApplied ? ' · weighed separately; the oils above are already trimmed to make room' : '';
 }
 
 /** The one PCSF line detail the Full recipe and the printed sheet quote —
@@ -35,9 +36,9 @@ export function postCookSuperfatProvenance(isExtra: boolean): string {
 export function postCookSuperfatLineDetail(
   oil: { grams: number; percentOfOil: number },
   weightUnit: WeightUnit,
-  isExtra: boolean,
+  reserveApplied: boolean,
 ): string {
-  return `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil${postCookSuperfatProvenance(isExtra)}`;
+  return `${formatWeight(oil.grams, weightUnit)} · ${formatGrams(oil.percentOfOil, 1)}% of oil${postCookSuperfatProvenance(reserveApplied)}`;
 }
 
 /** The dose label the Fragrance & colorants section derives per process: a bar is dosed
@@ -128,8 +129,9 @@ type FullRecipeInput = {
   waterGrams: number;
   additives: ComputedAdditive[];
   splitLiquidRows?: Array<{ row: SplitLiquidRow; grams: number | null }>;
-  /** The vm's stamped PCSF (see AppliedPostCookSuperfat) — its own applied state decides
-   * whether the line reads as reserved from the oils above or as extra weight. */
+  /** The vm's stamped PCSF (see AppliedPostCookSuperfat) — the line always reads as
+   * separately weighed material; its applied state only adds the "oils above are already
+   * trimmed" clause when the subtract reserve actually fired. */
   postCookSuperfat?: AppliedPostCookSuperfat | null;
   process: ProcessId;
   /** The Fragrance & colorants section as the vm computed it. A whole-batter colour lists
@@ -362,8 +364,8 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
 
   // Its own section, last and never among the recipe oils (those sum to 100% without
   // it) — the UG2HP convention, and the heading is the book's own term. Present only
-  // when a PCSF is actually set in the calculator. An applied subtract reserve says its
-  // grams come out of the oils already listed, so the manifest never reads as extra
+  // when a PCSF is actually set in the calculator. An applied subtract reserve says the oils
+  // above were trimmed to make room for it, so the manifest never reads as extra
   // shopping weight.
   if (postCookSuperfat) {
     push(
@@ -371,7 +373,7 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
       byAmount(
         postCookSuperfat.oils.map((oil) => ({
           name: oilDisplayName(oil.oilId),
-          detail: postCookSuperfatLineDetail(oil, weightUnit, postCookSuperfat.isExtra),
+          detail: postCookSuperfatLineDetail(oil, weightUnit, postCookSuperfat.reserveApplied),
           grams: oil.grams,
         })),
       ),

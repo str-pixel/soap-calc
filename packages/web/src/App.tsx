@@ -228,8 +228,9 @@ export default function App() {
     vesselVolumeCm3,
     measuredPasteGrams,
   });
-  useRecipeAutosave(process, recipeName, lines, settings, additives, scentColor, () =>
-    flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
+  useRecipeAutosave(
+    process, recipeName, lines, settings, additives, scentColor,
+    () => flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
   );
 
   function handlePrintBatchSheet() {
@@ -255,9 +256,10 @@ export default function App() {
         splitLiquids: vm.splitLiquidRows
           .filter(({ grams }) => grams != null && grams > 0)
           .map(({ row, grams }) => ({ key: row.key, name: row.name, grams: grams as number })),
-        // vm.postCookSuperfat already carries isExtra (AppliedPostCookSuperfat) — pass
+        // vm.postCookSuperfat already carries reserveApplied (AppliedPostCookSuperfat) — pass
         // the stamped object through instead of re-pairing the flag by hand.
         postCookSuperfat: vm.postCookSuperfat,
+        cookFactor: vm.cookFactor,
         scentColor: vm.scentColor,
       }),
     [
@@ -266,8 +268,8 @@ export default function App() {
       lyeGrams,
       vm.batchWeightWithExtras,
       vm.splitLiquidRows,
-      vm.splitLiquidGrams,
       vm.postCookSuperfat,
+      vm.cookFactor,
       vm.scentColor,
     ],
   );
@@ -504,6 +506,7 @@ export default function App() {
       cureEstimate={vm.cureEstimate}
       labelWeight={vm.labelWeight}
       totalOilGrams={vm.totalOilGrams}
+      cookFactor={vm.cookFactor}
     />
   );
 
@@ -638,7 +641,7 @@ export default function App() {
             process={process}
             onChange={setProcess}
             processVariant={settings.processVariant}
-            onVariantChange={(processVariant) => setSettings({ ...settings, processVariant })}
+            onVariantChange={(processVariant) => setSettings((s) => ({ ...s, processVariant }))}
           />
         </div>
       </header>
@@ -746,7 +749,7 @@ export default function App() {
                 dilution={vm.dilution}
                 soapConcentrationPercent={settings.soapConcentrationPercent}
                 onSoapConcentrationChange={(value) =>
-                  setSettings({ ...settings, soapConcentrationPercent: value })
+                  setSettings((s) => ({ ...s, soapConcentrationPercent: value }))
                 }
                 weightUnit={weightUnit}
                 altLiquidWaterGrams={vm.splitLiquidPasteWater}
@@ -756,7 +759,7 @@ export default function App() {
                 cookWaterGrams={vm.cookWaterGrams}
                 gradualWaterGrams={settings.gradualWaterGrams}
                 onGradualWaterChange={(value) =>
-                  setSettings({ ...settings, gradualWaterGrams: value })
+                  setSettings((s) => ({ ...s, gradualWaterGrams: value }))
                 }
                 measuredPasteGrams={measuredPasteGrams}
                 dilutionScope={dilutionScope}

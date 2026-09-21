@@ -249,3 +249,49 @@ describe('gramsStringToLineDisplay', () => {
     expect(gramsStringToLineDisplay('340.34', 'g')).toBe('340.3');
   });
 });
+
+describe('syncWeightEdit stores a real sub-gram weight', () => {
+  it('keeps 0.3 g as "0.3", never "0" (zero is what EMPTIES a line)', () => {
+    const synced = syncWeightEdit(twoLines, 'a', '0.3', '1000', true);
+    expect(synced.lines[0].weightGrams).toBe('0.3');
+  });
+  it('still stores whole grams otherwise', () => {
+    expect(syncWeightEdit(twoLines, 'a', '453.6', '1000', true).lines[0].weightGrams).toBe('454');
+  });
+});
+
+describe('syncBatchTotalEdit on a mixed recipe (some percents, some grams-only)', () => {
+  // Reachable: clear the total, set one line's percent (no grams without a total), type
+  // another line's grams (no percent without a total), then type a total.
+  const mixed: RecipeLine[] = [
+    { key: 'a', oilId: 'olive-oil', weightGrams: '', weightPercent: '60' },
+    { key: 'b', oilId: 'coconut-oil-76', weightGrams: '300', weightPercent: '' },
+    { key: 'c', oilId: 'shea-butter', weightGrams: '', weightPercent: '' },
+  ];
+  it('sizes the percent line from the total and keeps the grams line, giving it its percent', () => {
+    const out = syncBatchTotalEdit(mixed, '1000');
+    expect(out[0]).toMatchObject({ weightGrams: '600', weightPercent: '60' });
+    expect(out[1]).toMatchObject({ weightGrams: '300', weightPercent: '30' });
+    expect(out[2]).toMatchObject({ weightGrams: '', weightPercent: '' });
+  });
+});
+
+describe('solveOilTotalForBatchTarget degenerate inputs', () => {
+  it('returns the current oil total (no change) when the current batch is 0, instead of looping', { timeout: 2000 }, () => {
+    expect(solveOilTotalForBatchTarget(twoLines, 1500, 1000, 0)).toBe(1000);
+  });
+  it('returns the current oil total for a non-finite target', { timeout: 2000 }, () => {
+    expect(solveOilTotalForBatchTarget(twoLines, Number.NaN, 1000, 1400)).toBe(1000);
+  });
+});
+
+describe('review fixes 2026-09-21: a percent edit on a small batch keeps its sub-gram weight', () => {
+  it('a 0.1% line on a 20 g total stores 0.02, never "0" (zero EMPTIES the line)', () => {
+    // The 0.3 g case above is covered by the one-decimal widening; below 0.05 g that rule
+    // still rounds to "0", which is the exact loss it was added to prevent. A 20 g tester
+    // batch with a 0.1% line is the reachable path (percent × batch never passes through
+    // parseInputDisplayToGrams, so its 0.1 g floor does not apply here).
+    const synced = syncPercentEdit(twoLines, 'a', '0.1', '20', true);
+    expect(synced.lines[0].weightGrams).toBe('0.02');
+  });
+});

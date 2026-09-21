@@ -77,28 +77,32 @@ export type DerivedChemistry = {
 export function deriveChemistryFromProfile(
   profile: Record<string, number>,
 ): DerivedChemistry | null {
-  let molarMassSum = 0;
+  let molesPerMapped = 0; // Σ pct_i / MW_i — moles of fatty acid per `mappedPercent` grams of FA
   let mappedPercent = 0;
   let iodineValueFaBasis = 0;
 
   for (const [acid, percent] of Object.entries(profile)) {
     const fa = FATTY_ACID_PROPERTIES[acid];
     if (!fa || !(percent > 0)) continue;
-    molarMassSum += percent * fa.molecularWeight;
+    molesPerMapped += percent / fa.molecularWeight;
     mappedPercent += percent;
     iodineValueFaBasis += (percent * fa.doubleBonds * DIIODINE_MASS) / fa.molecularWeight;
   }
 
   if (mappedPercent < MIN_MAPPED_PERCENT) return null;
 
-  const meanMolarMass = molarMassSum / mappedPercent;
+  // Mole-weighted (harmonic) mean molar mass. The profile is in WEIGHT percent and
+  // saponification consumes one KOH per MOLE of fatty acid, so the mean that makes a
+  // blend's SAP the mass-weighted mean of its triglycerides' SAPs (Sci:2563) is
+  // mapped ÷ Σ(pct/MW). The mass-weighted arithmetic mean used until 2026-09-19 over-
+  // weighted the heavy acids and derived lauric oils ~3% low (coconut 0.2468 against a
+  // measured ~0.258; see the mixture tests).
+  const meanMolarMass = mappedPercent / molesPerMapped;
   const sapKoh = (3 * KOH_MOLAR_MASS) / (3 * meanMolarMass + GLYCERYL_ADJUSTMENT);
   // The Σ above is per `mappedPercent` grams of *fatty acids*; renormalize to a
-  // per-100 g FA basis exactly like the SAP calc's meanMolarMass denominator —
-  // otherwise the same substance derives different IVs depending on how completely
-  // its profile sums (±7% across legal ≥93% profiles). Then convert FA→oil basis
-  // with the same fatty-acyl mass fraction SAP uses, honoring the
-  // "g I₂ / 100 g oil" contract.
+  // per-100 g FA basis, then convert FA→oil basis with the fatty-acyl mass fraction of the
+  // mixture's triglyceride — exact for the same harmonic mean (100 g FA is 100/MW_h moles,
+  // carried on (100/MW_h)/3 moles of backbone).
   const glycerideFactor = (3 * meanMolarMass) / (3 * meanMolarMass + GLYCERYL_ADJUSTMENT);
   const iodineValue = iodineValueFaBasis * (100 / mappedPercent) * glycerideFactor;
   const ins = Math.round(sapKoh * 1000 - iodineValue);

@@ -1,5 +1,6 @@
 import { PRICING_GUIDE } from '@soap-calc/core';
 import type { PriceUnit } from './money';
+import { isRecord } from './isRecord';
 
 /** Own-property book lookup: price books are plain objects indexed by ids that can
  * come from imported files, so a key like 'constructor' or 'toString' must not
@@ -51,10 +52,6 @@ export const DEFAULT_PRICING_PROFILE: PricingProfile = {
   outputUnit: 'kg',
   currencySymbol: '$',
 };
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null;
-}
 
 function str(v: unknown, fallback: string): string {
   return typeof v === 'string' ? v : fallback;

@@ -6,6 +6,26 @@ import { resolveLineWeights } from './resolveLineWeights';
 import { parseRecipeSettings } from './parseRecipeSettings';
 import { kohBlendRangeFor, processOffers, type ProcessId } from './process';
 
+/** The settings fields calculateRecipe reads — exactly the ones parseRecipeSettings parses.
+ * resolveLineWeights ignores settings by contract (useRecipeProperties.ts). Anything else on
+ * RecipeSettings (notes, soaping temperature, preservative, dilution target, …) cannot change
+ * the lye result, so the calc memo is keyed on these and nothing else. */
+export const CALC_SETTING_KEYS = [
+  'superfatPercent',
+  'lyeType',
+  'waterMode',
+  'kohBlendPercent',
+  'naohPurityPercent',
+  'kohPurityPercent',
+  'waterPercentOfOils',
+  'lyeConcentrationPercent',
+  'lyeWaterRatio',
+] as const satisfies readonly (keyof RecipeSettings)[];
+
+export function recipeCalcKey(settings: RecipeSettings): string {
+  return JSON.stringify(CALC_SETTING_KEYS.map((key) => settings[key]));
+}
+
 export type RecipeDisplayTotals = {
   recipeOilWeightGrams: number;
   excludedFromLyeOilWeightGrams: number;
@@ -43,10 +63,6 @@ export function calculateRecipe(
       const message = `Invalid weight for ${label}`;
       if (!inputErrors.includes(message)) inputErrors.push(message);
     }
-  }
-
-  for (const err of resolved.errors) {
-    if (!inputErrors.includes(err)) inputErrors.push(err);
   }
 
   if (inputErrors.length || !parsed.ok) {

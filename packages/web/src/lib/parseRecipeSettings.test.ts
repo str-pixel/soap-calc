@@ -241,14 +241,6 @@ describe('parseRecipeSettings', () => {
       if (result.ok) expect(result.values.kohBlendPercent).toBe(10);
     });
 
-    it('dual: empty blend percent is treated as 0 (not an error)', () => {
-      const result = parseRecipeSettings(
-        settings({ lyeType: 'dual', kohBlendPercent: '' }),
-      );
-      expect(result.ok).toBe(true);
-      if (result.ok) expect(result.values.kohBlendPercent).toBe(0);
-    });
-
     it('dual: non-numeric blend percent is an error', () => {
       const result = parseRecipeSettings(
         settings({ lyeType: 'dual', kohBlendPercent: 'abc' }),
@@ -461,6 +453,24 @@ describe('parseRecipeSettings', () => {
         expect(result.values.lyeType).toBe('koh');
         expect(result.values.waterMode).toBe('lye_water_ratio');
       }
+    });
+  });
+
+  describe('blank and whitespace numeric settings (review 2026-09-19)', () => {
+    it('a whitespace-only water % reads as blank → the default, not 0 g of water', () => {
+      const r = parseRecipeSettings(settings({ waterMode: 'percent_of_oils', waterPercentOfOils: ' ' }));
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(r.values.waterPercentOfOils).toBeUndefined();
+    });
+    it('a whitespace-only water:lye ratio reads as blank → the default, not an error', () => {
+      const r = parseRecipeSettings(settings({ waterMode: 'lye_water_ratio', lyeWaterRatio: ' ' }));
+      expect(r.ok).toBe(true);
+      if (r.ok) expect(r.values.lyeWaterRatio).toBeUndefined();
+    });
+    it('dual lye with a blank KOH blend is an error, never a silent 0% KOH', () => {
+      const r = parseRecipeSettings(settings({ lyeType: 'dual', kohBlendPercent: '' }));
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.errors.join(' ')).toMatch(/KOH blend/);
     });
   });
 });

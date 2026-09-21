@@ -277,7 +277,7 @@ test('the Post-cook superfat section is last, and only exists when one is set in
       oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }],
       percentOfOil: 5,
       grams: 20,
-      isExtra: true, method: 'append', deliveredSuperfatPercent: null,
+      reserveApplied: false, method: 'append', deliveredSuperfatPercent: null,
     },
   });
   const last = sections[sections.length - 1];
@@ -352,7 +352,7 @@ test('buildFullRecipe groups the manifest under soap-book section headings', () 
       oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }],
       percentOfOil: 5,
       grams: 20,
-      isExtra: true, method: 'append', deliveredSuperfatPercent: null,
+      reserveApplied: false, method: 'append', deliveredSuperfatPercent: null,
     },
     soapingTempF: 125,
     process: 'hp',
@@ -382,16 +382,16 @@ test('buildFullRecipe groups the manifest under soap-book section headings', () 
   expect(byHeading('Post-cook superfat')[0].detail).toBe('20 g · 5% of oil');
 });
 
-test('a reserved PCSF section line still says it comes from the oils above', () => {
+test('a reserved PCSF section line says it is weighed separately and the oils above are trimmed', () => {
   const sections = buildFullRecipe({
     ...FULL_RECIPE_BASE,
-    postCookSuperfat: { oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }], percentOfOil: 5, grams: 20, isExtra: false, method: 'subtract', deliveredSuperfatPercent: null },
+    postCookSuperfat: { oils: [{ oilId: 'coconut-oil', percentOfOil: 5, grams: 20 }], percentOfOil: 5, grams: 20, reserveApplied: true, method: 'subtract', deliveredSuperfatPercent: null },
     process: 'hp',
   });
   const pcsf = sections.find((s) => s.heading === 'Post-cook superfat')!;
-  // "from oils above" says where the grams come from; "(lye reduced)" re-establishes the
-  // dropped explanation for why the printed lye figures run below SAP-table math.
-  expect(pcsf.items[0].detail).toBe('20 g · 5% of oil · from oils above (lye reduced)');
+  // The PCSF oil is weighed on its own, and the manifest's oils above it already carry the
+  // cook-factor trim that makes room for it — so oils + this line = the target oil weight.
+  expect(pcsf.items[0].detail).toBe('20 g · 5% of oil · weighed separately; the oils above are already trimmed to make room');
 });
 
 test('the after-cook section heading is process-aware — LS says After dilution', () => {
@@ -426,7 +426,7 @@ test('a solvent in-lye liquid (glycerin) lists BEFORE the alkali — it is what 
 
 test('a PCSF line with no applied state at all fails safe — it never claims a reserve', () => {
   // Only a type-bypassing caller can get here; if one does, "extra weight" is the harmless
-  // reading and "from oils above (lye reduced)" the harmful one.
+  // reading and "weighed separately; the oils above are already trimmed" the harmful one.
   expect(postCookSuperfatLineDetail({ grams: 20, percentOfOil: 5 }, 'g', undefined as never)).toBe(
     '20 g · 5% of oil',
   );
@@ -589,7 +589,7 @@ test('post-cook superfat oils run biggest amount first', () => {
       ],
       percentOfOil: 6,
       grams: 24,
-      isExtra: true, method: 'append', deliveredSuperfatPercent: null,
+      reserveApplied: false, method: 'append', deliveredSuperfatPercent: null,
     },
   });
   const names = sections.find((s) => s.heading === 'Post-cook superfat')!.items.map((i) => i.name);
@@ -691,7 +691,7 @@ test('Full recipe (HP/LS): the Fragrance section is last; LS colorants sit in th
     ...FULL_RECIPE_BASE,
     process: 'hp',
     scentColor: hp,
-    postCookSuperfat: { oils: [{ oilId: 'shea-butter', grams: 20, percentOfOil: 5 }], grams: 20, percentOfOil: 5, isExtra: true, method: 'append', deliveredSuperfatPercent: 8 } as never,
+    postCookSuperfat: { oils: [{ oilId: 'shea-butter', grams: 20, percentOfOil: 5 }], grams: 20, percentOfOil: 5, reserveApplied: false, method: 'append', deliveredSuperfatPercent: 8 } as never,
   });
   expect(hpSections.map((s) => s.heading).slice(-3)).toEqual(['Post-cook superfat', 'Colorants', 'Fragrance']);
 });

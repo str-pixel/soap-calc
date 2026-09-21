@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildFnwlIndex, findFnwlMatch } from './match-fnwl.js';
+import { parseFnwlCsv } from './parse-fnwl.js';
 import type { FnwlRow } from '../src/parse-fnwl.js';
 
 const rows: FnwlRow[] = [
@@ -48,5 +49,53 @@ describe('findFnwlMatch', () => {
     const hit = findFnwlMatch('Tamanu Oil, kamani', tamanuIndex);
     expect(hit?.name).toBe('Tamanu Foraha Oil');
     expect(hit?.productId).toBe('OILTAMANUCPVIRIN728');
+  });
+});
+
+describe('exact-name preference inside a name group', () => {
+  it("returns the row literally named as the catalog oil, not the group's lower-middle", () => {
+    // Real FNWL: 'Baobab Oil' 0.19 and 'Baobab Oil, Unrefined' 0.173 normalize to one key.
+    const text = [
+      'OIL,SAP,NAOH,KOH,PRODUCT_ID',
+      "'Baobab Oil',180 - 200,0.135,0.19,OILBAOBABCPZW789",
+      "'Baobab Oil, Unrefined',140 - 205,0.123,0.173,OILBAOBABEXPFEU614",
+    ].join('\n');
+    const index = buildFnwlIndex(parseFnwlCsv(text));
+    expect(findFnwlMatch('Baobab Oil', index)?.sapKoh).toBe(0.19);
+    // No exact name → the documented median rule still applies.
+    expect(findFnwlMatch('Baobab Oil, Organic', index)?.sapKoh).toBe(0.173);
+  });
+
+  it('takes the median among several rows that all carry the exact name (kukui has four)', () => {
+    const text = [
+      'OIL,SAP,NAOH,KOH,PRODUCT_ID',
+      // A non-median row FIRST in chart order, so a first-match implementation fails this.
+      "'Kukui Nut Oil',175 - 195,0.132,0.185,K2",
+      "'Kukui Nut Oil',180 - 200,0.135,0.19,K1",
+      "'Kukui Nut Oil',185 - 205,0.139,0.195,K3",
+    ].join('\n');
+    const index = buildFnwlIndex(parseFnwlCsv(text));
+    expect(findFnwlMatch('Kukui Nut Oil', index)?.productId).toBe('K1'); // the 0.19 median row
+  });
+});
+
+describe('review fixes 2026-09-21: the exact-name preference survives the alias path', () => {
+  it('prefers the chart row the ALIAS names, though the alias carries no punctuation', () => {
+    // LEGACY_TO_FNWL_ALIASES stores already-normalized names ('jojoba oil natural'), while
+    // the chart carries the raw product name ('Jojoba Oil, Natural'). Comparing the two
+    // verbatim can never match, so every alias-routed oil silently fell back to the group's
+    // median representative — the rule fired only for aliases that survive normalization
+    // byte-for-byte (grape seed, lard).
+    const text = [
+      'OIL,SAP,NAOH,KOH,PRODUCT_ID',
+      "'Jojoba Oil, Natural',95 - 100,0.069,0.097,J-NAT",
+      // 'organic' is stripped by normalizeOilName, so this lands in the SAME group.
+      "'Jojoba Oil, Natural Organic',85 - 95,0.063,0.089,J-ORG",
+    ].join('\n');
+    const index = buildFnwlIndex(parseFnwlCsv(text));
+    // The legacy display name normalizes to 'jojoba oil', which the alias table bridges.
+    const hit = findFnwlMatch('Jojoba Oil (a Liquid Wax Ester)', index);
+    expect(hit?.productId).toBe('J-NAT');
+    expect(hit?.sapKoh).toBe(0.097);
   });
 });

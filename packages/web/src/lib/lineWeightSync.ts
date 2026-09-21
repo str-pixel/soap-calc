@@ -8,7 +8,17 @@ function parseNum(value: string): number | null {
 }
 
 function formatGrams(n: number): string {
-  return String(Math.round(n));
+  const whole = Math.round(n);
+  if (whole !== 0 || n <= 0) return String(whole);
+  // Whole grams are the stored basis — except where rounding would erase a real weight:
+  // a 0.3 g line stores "0.3", never "0", because 0 is what EMPTIES a line (syncWeightEdit).
+  // One significant digit rather than one DECIMAL: a typed weight does arrive pre-rounded
+  // to 0.1 g (parseInputDisplayToGrams), but a weight derived from percent × batch does
+  // not, and on a small batch it lands below 0.05 g — where a one-decimal rule writes the
+  // "0" that empties the line. At or above 0.1 g the output is unchanged (bar an exact
+  // .x5 tie, which now falls rather than rises); below it the real figure is kept instead
+  // of being rounded up, so 0.05 g stores "0.05" and no longer doubles to "0.1".
+  return String(Number(n.toPrecision(1)));
 }
 
 /** Percents are display-rounded to 0.1, so each stored percent can be off by up to
@@ -186,8 +196,17 @@ export function syncBatchTotalEdit(lines: RecipeLine[], batchOilGrams: string): 
     remainder -= 1;
   }
   return baseLines.map((line, i) => {
-    if (exact[i] === null) return { ...line, weightGrams: '' };
-    return { ...line, weightGrams: String(floors[i] + (bumped.has(i) ? 1 : 0)) };
+    if (exact[i] !== null) {
+      return { ...line, weightGrams: String(floors[i] + (bumped.has(i) ? 1 : 0)) };
+    }
+    // No percent, but grams the maker typed (a line edited while the total was blank):
+    // keep them and give the line the percent those grams are of the new total. The
+    // footer flags an off-100% sum; independent entry means one edit never erases another.
+    const grams = parseNum(line.weightGrams);
+    if (grams !== null && grams > 0) {
+      return { ...line, weightPercent: formatPercent((grams / batch) * 100) };
+    }
+    return { ...line, weightGrams: '' };
   });
 }
 
@@ -210,6 +229,12 @@ export function solveOilTotalForBatchTarget(
    * 2000 down to ~1961 (scaled along with the oils). */
   fixedExtrasGrams = 0,
 ): number {
+  // Degenerate inputs have no ratio to solve: a zero or non-finite current batch makes the
+  // linear centre ±Infinity and the candidate loop below never terminates. Return the
+  // current oil total — "no change" — which is what the callers' own guards do today.
+  if (!(targetBatchGrams > 0) || !(currentOilTotalGrams > 0) || !(currentBatchGrams > 0)) {
+    return Math.max(1, Math.round(currentOilTotalGrams > 0 ? currentOilTotalGrams : 1));
+  }
   const fixed =
     Number.isFinite(fixedExtrasGrams) && fixedExtrasGrams > 0 ? fixedExtrasGrams : 0;
   const proportional0 = currentBatchGrams - fixed;

@@ -18,6 +18,7 @@ const baseResult = {
 function renderPanel() {
   render(
     <ResultsPanel
+      cookFactor={1}
       result={baseResult as never}
       inputErrors={[] as never}
       lyeLabel="NaOH"
@@ -53,6 +54,7 @@ describe('single-sourced batch weight (deep-review)', () => {
   it('shows batchWeightWithExtras as the Total batch figure even if the slices drift', () => {
     render(
       <ResultsPanel
+        cookFactor={1}
         result={baseResult as never}
         inputErrors={[] as never}
         lyeLabel="NaOH"

@@ -214,6 +214,7 @@ export function useFormulationInsights(
     const additiveEntries = (options.additives ?? []).map((item) => ({
       catalogId: item.catalogId,
       name: item.name,
+      addAt: item.addAt,
     }));
     // Trace speed is a CP/HP soaping concern gated behind the same low-coverage check the
     // label itself is withheld on below — computing it (and the additive-keyword scan that

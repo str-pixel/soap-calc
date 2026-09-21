@@ -282,3 +282,20 @@ test('a certain shortfall is still stated categorically, without the trace remed
   expect(screen.queryByText(/move liquids to trace/i)).toBeNull();
   expect(screen.getByText(/water:lye ratio, which cannot fall below 1:1/i)).toBeTruthy();
 });
+
+test('the allocation line adds only the rows that draw on the liquid budget', () => {
+  // A `rest` row shares the budget with the lye water; a `percent_of_oils` row sits ON TOP
+  // of it. 140 + 190 = 330 is the equation; the 100 g beer is not part of it.
+  const rows = [
+    ROW({ name: 'goat milk', sizeMode: 'rest', amount: '' }),
+    ROW({ name: 'beer', sizeMode: 'percent_of_oils', amount: '10' }),
+  ];
+  renderPanel({
+    rows,
+    resolvedRows: [{ row: rows[0], grams: 190 }, { row: rows[1], grams: 100 }],
+    allocation: { lyeWaterGrams: 140, targetLiquidGrams: 330 },
+  });
+  const line = screen.getByText(/lye water .* alternative liquid = .* total liquid/i);
+  expect(line.textContent).toMatch(/140 g lye water .* 190 g alternative liquid = 330 g total liquid/);
+  expect(line.textContent).not.toMatch(/290 g/);
+});

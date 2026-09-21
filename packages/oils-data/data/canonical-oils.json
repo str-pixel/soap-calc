@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-19T09:01:07.941Z",
+  "generatedAt": "2026-09-20T07:07:51.364Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -125,7 +125,7 @@
       "sapNaoh": 0.13903743315508021,
       "sapMgKohPerGram": 195,
       "iodine": 99,
-      "ins": 97,
+      "ins": 96,
       "fattyAcids": {
         "oleic": 71,
         "linoleic": 18,
@@ -178,7 +178,7 @@
       "sapNaoh": 0.1711229946524064,
       "sapMgKohPerGram": 240,
       "iodine": 9,
-      "ins": 241,
+      "ins": 231,
       "fattyAcids": {
         "lauric": 47.6,
         "myristic": 18.3,
@@ -203,7 +203,7 @@
         {
           "source": "derived",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
-          "notes": "Fatty-acid profile: Aloe butter is coconut oil with aloe vera extract, solidified — the aloe extract is a minor non-fatty-acid additive, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 dropped, no key). Legacy profile summed 83% and omitted caprylic/capric (coconut’s C8/C10). Filled to the coconut composition. SAP 0.24 kept (profile-derived 0.247, −2.8%, within gate). Property shift is cleansing/bubbly +16 (restoring the C8/C10) — flagged, acknowledged. Derived/blend product; the coconut FA is representative, not a measured aloe-butter lot."
+          "notes": "Fatty-acid profile: Aloe butter is coconut oil with aloe vera extract, solidified — the aloe extract is a minor non-fatty-acid additive, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 dropped, no key). Legacy profile summed 83% and omitted caprylic/capric (coconut’s C8/C10). Filled to the coconut composition. SAP 0.24 kept (profile-derived 0.254, −5.4%, within gate). Property shift is cleansing/bubbly +16 (restoring the C8/C10) — flagged, acknowledged. Derived/blend product; the coconut FA is representative, not a measured aloe-butter lot."
         },
         {
           "source": "manual",
@@ -265,7 +265,7 @@
       "sapNaoh": 0.1354723707664884,
       "sapMgKohPerGram": 190,
       "iodine": 100,
-      "ins": 91,
+      "ins": 90,
       "fattyAcids": {
         "oleic": 66,
         "linoleic": 27,
@@ -282,8 +282,8 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 180,
-          "mgKohPerGramMax": 200,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
           "mgKohPerGram": 190,
           "sapKoh": 0.19,
           "sapNaoh": 0.1354723707664884,
@@ -293,8 +293,8 @@
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
           "mgKohPerGram": 190,
-          "mgKohPerGramMin": 180,
-          "mgKohPerGramMax": 200,
+          "mgKohPerGramMin": 185,
+          "mgKohPerGramMax": 195,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -373,7 +373,7 @@
       "sapNaoh": 0.13404634581105168,
       "sapMgKohPerGram": 188,
       "iodine": 86,
-      "ins": 99,
+      "ins": 102,
       "fattyAcids": {
         "oleic": 57,
         "linoleic": 18,
@@ -434,7 +434,7 @@
       "sapNaoh": 0.17896613190730837,
       "sapMgKohPerGram": 251,
       "iodine": 15,
-      "ins": 230,
+      "ins": 236,
       "fattyAcids": {
         "lauric": 47.4,
         "myristic": 15.6,
@@ -496,11 +496,11 @@
       ],
       "inciName": "Adansonia Digitata (Baobab) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.2,
-      "sapNaoh": 0.14260249554367202,
-      "sapMgKohPerGram": 200,
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
       "iodine": 75,
-      "ins": 125,
+      "ins": 115,
       "fattyAcids": {
         "oleic": 37,
         "stearic": 4,
@@ -520,26 +520,20 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 140,
-          "mgKohPerGramMax": 205,
-          "mgKohPerGram": 172.5,
-          "sapKoh": 0.173,
-          "sapNaoh": 0.12335115864527628,
-          "notes": "FNWL chart entry: Baobab Oil, Unrefined"
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Baobab Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 172.5,
-          "mgKohPerGramMin": 140,
-          "mgKohPerGramMax": 205,
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 180,
+          "mgKohPerGramMax": 200,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
-        },
-        {
-          "source": "manual",
-          "sapKoh": 0.2,
-          "sapNaoh": 0.14260249554367202,
-          "notes": "legacy/FNWL differ by 13.5% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
           "source": "cosing",
@@ -547,8 +541,8 @@
           "notes": "INCI \"Adansonia Digitata (Baobab) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "estimated"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "beeswax",
@@ -693,7 +687,7 @@
       "sapNaoh": 0.13262032085561495,
       "sapMgKohPerGram": 186,
       "iodine": 135,
-      "ins": 55,
+      "ins": 51,
       "fattyAcids": {
         "linoleic": 36.6,
         "oleic": 21.7,
@@ -757,7 +751,7 @@
       "sapNaoh": 0.13618538324420676,
       "sapMgKohPerGram": 191,
       "iodine": 100,
-      "ins": 90,
+      "ins": 91,
       "fattyAcids": {
         "oleic": 39,
         "stearic": 11,
@@ -867,7 +861,7 @@
       "sapNaoh": 0.15187165775401068,
       "sapMgKohPerGram": 213,
       "iodine": 70,
-      "ins": 153,
+      "ins": 143,
       "fattyAcids": {
         "oleic": 71,
         "stearic": 2,
@@ -1003,7 +997,7 @@
       "sapNaoh": 0.03493761140819964,
       "sapMgKohPerGram": 49,
       "iodine": 32,
-      "ins": 12,
+      "ins": 17,
       "fattyAcids": {},
       "propertiesAvailable": false,
       "sources": [
@@ -1058,7 +1052,7 @@
       "sapNaoh": 0.13262032085561495,
       "sapMgKohPerGram": 186,
       "iodine": 110,
-      "ins": 56,
+      "ins": 76,
       "fattyAcids": {
         "oleic": 61,
         "stearic": 2,
@@ -1407,7 +1401,7 @@
       "sapNaoh": 0.1839572192513369,
       "sapMgKohPerGram": 258,
       "iodine": 10,
-      "ins": 258,
+      "ins": 248,
       "fattyAcids": {
         "lauric": 47.6,
         "myristic": 18.3,
@@ -1432,7 +1426,7 @@
         {
           "source": "literature",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
-          "notes": "Fatty-acid profile: Codex CXS 210 coconut oil (range midpoints, normalized) — shared CODEX_COCONUT constant. Restores the caprylic (C8, ~7%) + capric (C10, ~6%) that coconut carries but the legacy profile truncated. GOLDEN-SAP oil — stored 0.258 KEPT (verified; the golden-SAP validator still passes). Profile-derived 0.247 is within the gate (+4.5%, the known lauric-oil FA-vs-measured gap); derived IV 10 matches stored 10. Legacy profile summed 89%, omitting C8/C10; adding them raises cleansing/bubbly +12.3 (coconut’s well-known high cleansing partly comes from C8/C10, which our property model counts) — under the guard threshold. NOTE this is a high-visibility change: coconut is in most recipes, so its cleansing/bubbly bars move up. coconut-oil-92 (hydrogenated, IV 3) is NOT given this profile — it needs a hydrogenated-coconut source."
+          "notes": "Fatty-acid profile: Codex CXS 210 coconut oil (range midpoints, normalized) — shared CODEX_COCONUT constant. Restores the caprylic (C8, ~7%) + capric (C10, ~6%) that coconut carries but the legacy profile truncated. GOLDEN-SAP oil — stored 0.258 KEPT (verified; the golden-SAP validator still passes). Profile-derived 0.254 is within the gate (+1.7%); derived IV 9.4 ≈ stored 10. Legacy profile summed 89%, omitting C8/C10; adding them raises cleansing/bubbly +12.3 (coconut’s well-known high cleansing partly comes from C8/C10, which our property model counts) — under the guard threshold. NOTE this is a high-visibility change: coconut is in most recipes, so its cleansing/bubbly bars move up. coconut-oil-92 (hydrogenated, IV 3) is NOT given this profile — it needs a hydrogenated-coconut source."
         },
         {
           "source": "fnwl",
@@ -1473,7 +1467,7 @@
       "sapNaoh": 0.1839572192513369,
       "sapMgKohPerGram": 258,
       "iodine": 3,
-      "ins": 258,
+      "ins": 255,
       "fattyAcids": {
         "lauric": 47.6,
         "myristic": 18.3,
@@ -1691,11 +1685,11 @@
       ],
       "inciName": "Attalea Cohune Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.246,
-      "sapNaoh": 0.17540106951871656,
-      "sapMgKohPerGram": 246,
-      "iodine": 11,
-      "ins": 235,
+      "sapKoh": 0.253,
+      "sapNaoh": 0.1803921568627451,
+      "sapMgKohPerGram": 253,
+      "iodine": 10,
+      "ins": 243,
       "fattyAcids": {
         "lauric": 46.5,
         "myristic": 16,
@@ -1717,13 +1711,13 @@
         {
           "source": "literature",
           "url": "https://en.wikipedia.org/wiki/Cohune_oil",
-          "notes": "Fatty-acid profile: Attalea cohune — FAO Minor Oil Crops bulletin (Axtell 1992, from R.M. Fairman), the only cohune-native complete profile (reproduced by Wikipedia + Monaco Nature Encyclopedia; NOT independently GC-measured — SINGLE-SOURCE). High confidence on the caprylic 7.5 / capric 6.5 presence and lauric ~46%, but myristic 16 / palmitic 9.5 run higher than measured relatives (babassu/indaiá ~12 / ~4) — a documented asterisk. Codex CXS 210 does NOT cover cohune. Cross-check: this profile derives SAP 0.246 / IV 11, matching the measured relatives (babassu 0.237, indaiá 0.241) — a single source that predicts independent measurements. Restores caprylic + capric (~14% combined) the legacy profile dropped. PAIRED WITH a LEGACY_SAP_CORRECTION: stored SAP 0.205 is impossibly low for a lauric palm-kernel oil (below the saponification value of any lauric composition; even the truncated profile derived 0.232). Corrected to the profile-derived 0.246 (no FNWL match → applied via LEGACY_SAP_CORRECTIONS, confidence→estimated); legacy iodine 30 (also inconsistent — cohune is ~96% saturated) corrected to the derived 11. Profile-derived 0.2457 then agrees with the corrected 0.246 (+0.1%, gate-safe). Property shift bubbly/cleansing +12.5 (restored C8/C10) / condition −10, under the guard. Removed from the MCT guard allowlist and the acknowledged-SAP-deviation list. CAVEAT: single-source FA data — revise the profile if an independent GC analysis of A. cohune appears."
+          "notes": "Fatty-acid profile: Attalea cohune — FAO Minor Oil Crops bulletin (Axtell 1992, from R.M. Fairman), the only cohune-native complete profile (reproduced by Wikipedia + Monaco Nature Encyclopedia; NOT independently GC-measured — SINGLE-SOURCE). High confidence on the caprylic 7.5 / capric 6.5 presence and lauric ~46%, but myristic 16 / palmitic 9.5 run higher than measured relatives (babassu/indaiá ~12 / ~4) — a documented asterisk. Codex CXS 210 does NOT cover cohune. Cross-check: this profile derives SAP 0.253 / IV 10, matching the measured relatives (babassu 0.237, indaiá 0.241) — a single source that predicts independent measurements. Restores caprylic + capric (~14% combined) the legacy profile dropped. PAIRED WITH a LEGACY_SAP_CORRECTION: stored SAP 0.205 is impossibly low for a lauric palm-kernel oil (below the saponification value of any lauric composition; even the truncated profile derived 0.237). Corrected to the profile-derived 0.253 (no FNWL match → applied via LEGACY_SAP_CORRECTIONS, confidence→estimated); legacy iodine 30 (also inconsistent — cohune is ~96% saturated) corrected to the derived 10. Profile-derived 0.2531 then agrees with the corrected 0.253 (within 0.1%, gate-safe). Property shift bubbly/cleansing +12.5 (restored C8/C10) / condition −10, under the guard. Removed from the MCT guard allowlist and the acknowledged-SAP-deviation list. CAVEAT: single-source FA data — revise the profile if an independent GC analysis of A. cohune appears."
         },
         {
           "source": "manual",
-          "sapKoh": 0.246,
-          "sapNaoh": 0.17540106951871656,
-          "notes": "Corrected: legacy SAP (0.205) is impossibly low for a lauric palm-kernel oil — below the saponification value of any lauric composition, and inconsistent with cohune’s own fatty-acid profile (which derives ~0.246). Replaced with the Phase-5-backfilled-profile-derived 0.246, which matches measured relatives (babassu 0.237, indaiá 0.241). No FNWL match, so the correction applies here. Legacy iodine (30) is likewise high vs the profile-derived ~11 (cohune is ~96% saturated); corrected to 11 so the recomputed INS is not re-poisoned."
+          "sapKoh": 0.253,
+          "sapNaoh": 0.1803921568627451,
+          "notes": "Corrected: legacy SAP (0.205) is impossibly low for a lauric palm-kernel oil — below the saponification value of any lauric composition, and inconsistent with cohune’s own fatty-acid profile (which derives ~0.253 with the mole-weighted mean; the 0.246 shipped until 2026-09-19 came from the mass-weighted mean). 0.253 sits beside the catalog’s FNWL-verified lauric relatives (babassu 0.251, coconut 0.258). No FNWL match, so the correction applies here. Legacy iodine (30) is likewise high vs the profile-derived ~10 (cohune is ~96% saturated); corrected to 10 so the recomputed INS is not re-poisoned."
         },
         {
           "source": "manual",
@@ -1745,7 +1739,7 @@
       "sapNaoh": 0.1354723707664884,
       "sapMgKohPerGram": 190,
       "iodine": 117,
-      "ins": 69,
+      "ins": 73,
       "fattyAcids": {
         "oleic": 32,
         "stearic": 2,
@@ -1804,7 +1798,7 @@
       "sapNaoh": 0.13689839572192514,
       "sapMgKohPerGram": 192,
       "iodine": 108,
-      "ins": 89,
+      "ins": 84,
       "fattyAcids": {
         "oleic": 18,
         "stearic": 13,
@@ -1976,7 +1970,7 @@
       "sapNaoh": 0.13404634581105168,
       "sapMgKohPerGram": 188,
       "iodine": 160,
-      "ins": 30,
+      "ins": 28,
       "fattyAcids": {
         "linoleic": 73.9,
         "linolenic": 9.2,
@@ -2039,7 +2033,7 @@
       "sapNaoh": 0.13618538324420676,
       "sapMgKohPerGram": 191,
       "iodine": 180,
-      "ins": -6,
+      "ins": 11,
       "fattyAcids": {
         "oleic": 27,
         "stearic": 3,
@@ -2090,11 +2084,11 @@
       ],
       "inciName": "Vitis vinifera (Grape) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.193,
-      "sapNaoh": 0.1376114081996435,
-      "sapMgKohPerGram": 193,
+      "sapKoh": 0.19,
+      "sapNaoh": 0.1354723707664884,
+      "sapMgKohPerGram": 190,
       "iodine": 131,
-      "ins": 66,
+      "ins": 59,
       "fattyAcids": {
         "oleic": 20,
         "stearic": 4,
@@ -2112,26 +2106,24 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 185,
+          "mgKohPerGramMin": 180,
           "mgKohPerGramMax": 200,
-          "mgKohPerGram": 192.5,
-          "sapKoh": 0.193,
-          "sapNaoh": 0.1376114081996435,
-          "notes": "FNWL chart entry: Grape Seed Oil, Organic"
+          "mgKohPerGram": 190,
+          "sapKoh": 0.19,
+          "sapNaoh": 0.1354723707664884,
+          "notes": "FNWL chart entry: Grape Seed Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 192.5,
-          "mgKohPerGramMin": 185,
+          "mgKohPerGram": 190,
+          "mgKohPerGramMin": 180,
           "mgKohPerGramMax": 200,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
           "source": "manual",
-          "sapKoh": 0.193,
-          "sapNaoh": 0.1376114081996435,
-          "notes": "legacy/FNWL differ by 6.6% (>5%); kept the source closest to the profile-derived SAP"
+          "notes": "INCI via correction — The FNWL 'Grape Seed Oil' product (OILGRAPECPCL64) carries a tocopherol-blend chart INCI (\"…Seed Oil, Tocopherol\"); the oil itself is the plain seed oil (matches VITIS VINIFERA (GRAPE) SEED OIL)."
         },
         {
           "source": "cosing",
@@ -2140,7 +2132,7 @@
         }
       ],
       "primarySource": "fnwl",
-      "confidence": "estimated"
+      "confidence": "verified"
     },
     {
       "id": "hazelnut-oil",
@@ -2204,11 +2196,11 @@
       ],
       "inciName": "Cannabis Sativa (Hemp) Seed Oil",
       "category": "triglyceride",
-      "sapKoh": 0.191,
-      "sapNaoh": 0.13618538324420676,
-      "sapMgKohPerGram": 191,
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
       "iodine": 165,
-      "ins": 39,
+      "ins": 28,
       "fattyAcids": {
         "oleic": 12,
         "stearic": 2,
@@ -2227,19 +2219,19 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 188,
-          "mgKohPerGramMax": 194,
-          "mgKohPerGram": 191,
-          "sapKoh": 0.191,
-          "sapNaoh": 0.13618538324420676,
-          "notes": "FNWL chart entry: Organic Virgin Hemp Seed Oil"
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 195,
+          "mgKohPerGram": 192.5,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Hemp Seed Oil"
         },
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 191,
-          "mgKohPerGramMin": 188,
-          "mgKohPerGramMax": 194,
+          "mgKohPerGram": 192.5,
+          "mgKohPerGramMin": 190,
+          "mgKohPerGramMax": 195,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -2337,7 +2329,7 @@
       "sapNaoh": 0.06559714795008913,
       "sapMgKohPerGram": 92,
       "iodine": 83,
-      "ins": 11,
+      "ins": 9,
       "fattyAcids": {
         "oleic": 12
       },
@@ -2350,8 +2342,22 @@
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
-          "source": "manual",
-          "notes": "INCI via supplemental id — Duplicate catalog entry; same INCI as wax-ester jojoba line"
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 85,
+          "mgKohPerGramMax": 98,
+          "mgKohPerGram": 91.5,
+          "sapKoh": 0.092,
+          "sapNaoh": 0.06559714795008913,
+          "notes": "FNWL chart entry: Jojoba Oil, Natural"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 91.5,
+          "mgKohPerGramMin": 85,
+          "mgKohPerGramMax": 98,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
           "source": "cosing",
@@ -2359,8 +2365,8 @@
           "notes": "INCI \"Simmondsia Chinensis (Jojoba) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "karanja-oil",
@@ -2374,7 +2380,7 @@
       "sapNaoh": 0.1354723707664884,
       "sapMgKohPerGram": 190,
       "iodine": 85,
-      "ins": 98,
+      "ins": 105,
       "fattyAcids": {
         "oleic": 56.6,
         "linoleic": 14.1,
@@ -2514,7 +2520,7 @@
       "sapNaoh": 0.1354723707664884,
       "sapMgKohPerGram": 190,
       "iodine": 168,
-      "ins": 24,
+      "ins": 22,
       "fattyAcids": {
         "oleic": 20,
         "stearic": 2,
@@ -2573,7 +2579,7 @@
       "sapNaoh": 0.07557932263814617,
       "sapMgKohPerGram": 106,
       "iodine": 27,
-      "ins": 83,
+      "ins": 79,
       "fattyAcids": {},
       "propertiesAvailable": false,
       "sources": [
@@ -2641,11 +2647,11 @@
       ],
       "inciName": "Adeps Suillus",
       "category": "triglyceride",
-      "sapKoh": 0.198,
-      "sapNaoh": 0.1411764705882353,
-      "sapMgKohPerGram": 198,
+      "sapKoh": 0.193,
+      "sapNaoh": 0.1376114081996435,
+      "sapMgKohPerGram": 193,
       "iodine": 57,
-      "ins": 139,
+      "ins": 136,
       "fattyAcids": {
         "oleic": 46,
         "stearic": 13,
@@ -2662,6 +2668,24 @@
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 193,
+          "mgKohPerGramMax": 193,
+          "mgKohPerGram": 193,
+          "sapKoh": 0.193,
+          "sapNaoh": 0.1376114081996435,
+          "notes": "FNWL chart entry: Lard"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 193,
+          "mgKohPerGramMin": 193,
+          "mgKohPerGramMax": 193,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
+        },
+        {
           "source": "manual",
           "notes": "INCI via supplemental id — CosIng/EU INCI for hog lard (pig tallow)"
         },
@@ -2671,8 +2695,8 @@
           "notes": "INCI \"Adeps Suillus\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "laurel-fruit-oil",
@@ -3017,7 +3041,7 @@
       "sapNaoh": 0.14046345811051694,
       "sapMgKohPerGram": 197,
       "iodine": 73,
-      "ins": 119,
+      "ins": 124,
       "fattyAcids": {
         "oleic": 75,
         "stearic": 7,
@@ -3179,7 +3203,7 @@
         {
           "source": "derived",
           "url": "https://www.fao.org/4/y2774e/y2774e04.htm",
-          "notes": "Fatty-acid profile: Monoï de Tahiti is coconut oil infused with tiare (Gardenia) flowers — the tiare is a fragrance, not a fatty-acid source, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 caproic, ~0.3%, has no key and is dropped). Legacy profile summed 75% and omitted caprylic/capric/oleic (the C8/C10 coconut carries). Filled to the coconut composition. SAP 0.255 kept (verified; profile-derived 0.247, +3.3%, within gate — coconut FA-derived SAP runs ~4% below the measured, a known lauric-oil effect). Property shift is cleansing/bubbly +19 (restoring the C8/C10) — flagged, acknowledged."
+          "notes": "Fatty-acid profile: Monoï de Tahiti is coconut oil infused with tiare (Gardenia) flowers — the tiare is a fragrance, not a fatty-acid source, so the FA composition is coconut’s. Representative coconut profile from Codex CXS 210 (coconut oil), range midpoints normalized (C6 caproic, ~0.3%, has no key and is dropped). Legacy profile summed 75% and omitted caprylic/capric/oleic (the C8/C10 coconut carries). Filled to the coconut composition. SAP 0.255 kept (verified; profile-derived 0.254, +0.5%, close agreement — the mole-weighted-mean coconut-derived SAP tracks the measured value closely). Property shift is cleansing/bubbly +19 (restoring the C8/C10) — flagged, acknowledged."
         },
         {
           "source": "fnwl",
@@ -3220,7 +3244,7 @@
       "sapNaoh": 0.13903743315508021,
       "sapMgKohPerGram": 195,
       "iodine": 68,
-      "ins": 124,
+      "ins": 127,
       "fattyAcids": {
         "oleic": 74.4,
         "behenic": 6.1,
@@ -3395,7 +3419,7 @@
       "sapNaoh": 0.12263814616755792,
       "sapMgKohPerGram": 172,
       "iodine": 101,
-      "ins": 72,
+      "ins": 71,
       "fattyAcids": {
         "oleic": 18,
         "linoleic": 14,
@@ -3736,7 +3760,7 @@
         {
           "source": "literature",
           "url": "https://www.fao.org/input/download/standards/336/CXS_210e_2015.pdf",
-          "notes": "Fatty-acid profile: Ang, Liu & Huang (eds.), Asian Foods (1999) representative palm-kernel-oil profile — every acid falls inside the Codex CXS 210 range for palm kernel oil (cross-checked). Restores the caprylic (C8, ~3.3%) + capric (C10, ~3.4%) that PKO carries but the legacy profile dropped. CONSISTENCY backfill (not a truncation flag): legacy summed exactly 93.0% — it passes the 93% completeness gate yet OMITS PKO’s real C8/C10, so the completeness test never surfaced it. Clean gap-fill: stored lauric 49 / myristic 16 already match Codex/Ang (~48/~16, NOT inflated), so this only ADDS the dropped C8/C10. SAP resolution unchanged — profile-derived rises 0.2335→0.2375 but still resolves closest to legacy 0.247 (vs FNWL 0.203), which is kept; derived IV 19 ≈ stored 20. Cleansing/bubbly +6.1 (C8/C10 entering the cleansing set), under the guard threshold. Contrast babassu-oil, whose stored lauric/myristic ARE inflated (needs a full reprofile, not a gap-fill) — held for its own row."
+          "notes": "Fatty-acid profile: Ang, Liu & Huang (eds.), Asian Foods (1999) representative palm-kernel-oil profile — every acid falls inside the Codex CXS 210 range for palm kernel oil (cross-checked). Restores the caprylic (C8, ~3.3%) + capric (C10, ~3.4%) that PKO carries but the legacy profile dropped. CONSISTENCY backfill (not a truncation flag): legacy summed exactly 93.0% — it passes the 93% completeness gate yet OMITS PKO’s real C8/C10, so the completeness test never surfaced it. Clean gap-fill: stored lauric 49 / myristic 16 already match Codex/Ang (~48/~16, NOT inflated), so this only ADDS the dropped C8/C10. SAP resolution unchanged — profile-derived rises 0.2379→0.2436 but still resolves closest to legacy 0.247 (vs FNWL 0.203), which is kept; derived IV 18 ≈ stored 20. Cleansing/bubbly +6.1 (C8/C10 entering the cleansing set), under the guard threshold. Contrast babassu-oil, whose stored lauric/myristic ARE inflated (needs a full reprofile, not a gap-fill) — held for its own row."
         },
         {
           "source": "fnwl",
@@ -4161,7 +4185,7 @@
       "sapNaoh": 0.1354723707664884,
       "sapMgKohPerGram": 190,
       "iodine": 108,
-      "ins": 87,
+      "ins": 82,
       "fattyAcids": {
         "oleic": 65,
         "stearic": 2,
@@ -4216,7 +4240,7 @@
       "sapNaoh": 0.1354723707664884,
       "sapMgKohPerGram": 190,
       "iodine": 92,
-      "ins": 99,
+      "ins": 98,
       "fattyAcids": {
         "oleic": 56,
         "stearic": 3,
@@ -4310,7 +4334,7 @@
       "sapNaoh": 0.1376114081996435,
       "sapMgKohPerGram": 193,
       "iodine": 196,
-      "ins": -6,
+      "ins": -3,
       "fattyAcids": {
         "oleic": 15,
         "stearic": 2,
@@ -4397,7 +4421,7 @@
       "sapNaoh": 0.13262032085561495,
       "sapMgKohPerGram": 186,
       "iodine": 95,
-      "ins": 92,
+      "ins": 91,
       "fattyAcids": {
         "oleic": 63,
         "stearic": 1,
@@ -4649,7 +4673,7 @@
       "sapNaoh": 0.1376114081996435,
       "sapMgKohPerGram": 193,
       "iodine": 128,
-      "ins": 67,
+      "ins": 65,
       "fattyAcids": {
         "linoleic": 50.92,
         "oleic": 26.34,
@@ -4781,7 +4805,7 @@
       "sapNaoh": 0.13404634581105168,
       "sapMgKohPerGram": 188,
       "iodine": 163,
-      "ins": 24,
+      "ins": 25,
       "fattyAcids": {
         "oleic": 13,
         "linoleic": 55,
@@ -4799,9 +4823,9 @@
         {
           "source": "fnwl",
           "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
-          "mgKohPerGramMin": 188,
-          "mgKohPerGramMax": 188,
-          "mgKohPerGram": 188,
+          "mgKohPerGramMin": 184,
+          "mgKohPerGramMax": 191,
+          "mgKohPerGram": 187.5,
           "sapKoh": 0.188,
           "sapNaoh": 0.13404634581105168,
           "notes": "FNWL chart entry: Red Raspberry Seed Oil"
@@ -4809,9 +4833,9 @@
         {
           "source": "ldg",
           "url": "https://www.ldg.international/saponification-chart/",
-          "mgKohPerGram": 188,
-          "mgKohPerGramMin": 188,
-          "mgKohPerGramMax": 188,
+          "mgKohPerGram": 187.5,
+          "mgKohPerGramMin": 184,
+          "mgKohPerGramMax": 191,
           "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
@@ -4835,7 +4859,7 @@
       "sapNaoh": 0.14188948306595364,
       "sapMgKohPerGram": 199,
       "iodine": 53,
-      "ins": 145,
+      "ins": 146,
       "fattyAcids": {
         "oleic": 39,
         "stearic": 5,
@@ -4876,7 +4900,7 @@
       "sapNaoh": 0.1354723707664884,
       "sapMgKohPerGram": 190,
       "iodine": 100,
-      "ins": 87,
+      "ins": 90,
       "fattyAcids": {
         "oleic": 38,
         "stearic": 3,
@@ -4932,7 +4956,7 @@
       "sapNaoh": 0.13475935828877006,
       "sapMgKohPerGram": 189,
       "iodine": 188,
-      "ins": 10,
+      "ins": 1,
       "fattyAcids": {
         "oleic": 12,
         "stearic": 2,
@@ -5032,7 +5056,7 @@
       "sapNaoh": 0.13404634581105168,
       "sapMgKohPerGram": 188,
       "iodine": 145,
-      "ins": 47,
+      "ins": 43,
       "fattyAcids": {
         "oleic": 15,
         "linoleic": 75,
@@ -5089,7 +5113,7 @@
       "sapNaoh": 0.13689839572192514,
       "sapMgKohPerGram": 192,
       "iodine": 93,
-      "ins": 97,
+      "ins": 99,
       "fattyAcids": {
         "oleic": 77,
         "stearic": 2,
@@ -5217,7 +5241,7 @@
         {
           "source": "literature",
           "url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=902884",
-          "notes": "Fatty-acid profile: Serenoa repens CO2 berry extract — NIST SRM 3251 (certified reference material; Schantz et al. 2008). This entry IS the extract that SRM 3251 measures, so it uses the same profile as saw-palmetto-oil. Legacy profile summed 90% (missing caprylic/capric). Gap-filled to 100% from the NIST certified reference. SAP 0.23 kept (profile-derived 0.218, +5.4%, within gate). Property shift +4.5 (under the guard threshold)."
+          "notes": "Fatty-acid profile: Serenoa repens CO2 berry extract — NIST SRM 3251 (certified reference material; Schantz et al. 2008). This entry IS the extract that SRM 3251 measures, so it uses the same profile as saw-palmetto-oil. Legacy profile summed 90% (missing caprylic/capric). Gap-filled to 100% from the NIST certified reference. SAP 0.23 kept (profile-derived 0.225, +2.2%, within gate). Property shift +4.5 (under the guard threshold)."
         },
         {
           "source": "manual",
@@ -5271,7 +5295,7 @@
         {
           "source": "literature",
           "url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=902884",
-          "notes": "Fatty-acid profile: Serenoa repens — NIST SRM 3251 (certified reference material, CO2 berry extract; Schantz et al. 2008, Anal Bioanal Chem) + commercial supplement survey (Nutrients 2013, PMC3798925). Unusual medium-chain (lauric/myristic) + oleic mix. FA composition is what SAP consumes (free-vs-ester split irrelevant). Caproic C6 (~2%) unmapped. Legacy profile summed 89% (missing caprylic/capric). Gap-filled to 100% from the NIST certified reference. SAP 0.22 kept (verified — the medium-chain composition genuinely gives a high SAP; profile-derived 0.218, +0.8%). Property shift +7 (under threshold). Oleic:lauric ratio is ripeness/ecotype-variable; NIST CO2 extract is the best single anchor. (saw-palmetto-extract shares this NIST source — a separate row.)"
+          "notes": "Fatty-acid profile: Serenoa repens — NIST SRM 3251 (certified reference material, CO2 berry extract; Schantz et al. 2008, Anal Bioanal Chem) + commercial supplement survey (Nutrients 2013, PMC3798925). Unusual medium-chain (lauric/myristic) + oleic mix. FA composition is what SAP consumes (free-vs-ester split irrelevant). Caproic C6 (~2%) unmapped. Legacy profile summed 89% (missing caprylic/capric). Gap-filled to 100% from the NIST certified reference. SAP 0.22 kept (verified — the medium-chain composition genuinely gives a high SAP; profile-derived 0.225, −2.3%). Property shift +7 (under threshold). Oleic:lauric ratio is ripeness/ecotype-variable; NIST CO2 extract is the best single anchor. (saw-palmetto-extract shares this NIST source — a separate row.)"
         },
         {
           "source": "manual",
@@ -5339,7 +5363,7 @@
       "sapNaoh": 0.1376114081996435,
       "sapMgKohPerGram": 193,
       "iodine": 110,
-      "ins": 81,
+      "ins": 83,
       "fattyAcids": {
         "oleic": 40,
         "stearic": 5,
@@ -5393,7 +5417,7 @@
       "sapNaoh": 0.1283422459893048,
       "sapMgKohPerGram": 180,
       "iodine": 59,
-      "ins": 116,
+      "ins": 121,
       "fattyAcids": {
         "oleic": 48,
         "stearic": 40,
@@ -5451,7 +5475,7 @@
       "sapNaoh": 0.13048128342245988,
       "sapMgKohPerGram": 183,
       "iodine": 83,
-      "ins": 102,
+      "ins": 100,
       "fattyAcids": {
         "oleic": 73,
         "stearic": 10,
@@ -5505,7 +5529,7 @@
       "sapNaoh": 0.1354723707664884,
       "sapMgKohPerGram": 190,
       "iodine": 131,
-      "ins": 61,
+      "ins": 59,
       "fattyAcids": {
         "oleic": 24,
         "stearic": 5,
@@ -5682,7 +5706,7 @@
       "sapNaoh": 0.13618538324420676,
       "sapMgKohPerGram": 191,
       "iodine": 133,
-      "ins": 63,
+      "ins": 58,
       "fattyAcids": {
         "oleic": 16,
         "stearic": 4,
@@ -5737,7 +5761,7 @@
       "sapNaoh": 0.13618538324420676,
       "sapMgKohPerGram": 191,
       "iodine": 83,
-      "ins": 106,
+      "ins": 108,
       "fattyAcids": {
         "oleic": 83,
         "stearic": 4,
@@ -5792,7 +5816,7 @@
       "sapNaoh": 0.13975044563279856,
       "sapMgKohPerGram": 196,
       "iodine": 45,
-      "ins": 147,
+      "ins": 151,
       "fattyAcids": {
         "oleic": 36,
         "lauric": 2,
@@ -5848,7 +5872,7 @@
       "sapNaoh": 0.1376114081996435,
       "sapMgKohPerGram": 193,
       "iodine": 31,
-      "ins": 166,
+      "ins": 162,
       "fattyAcids": {
         "oleic": 30,
         "stearic": 24,
@@ -5916,13 +5940,13 @@
       "aliases": [
         "tamanu oil kamani"
       ],
-      "inciName": "Calophyllum Tacamahaca (Tamanu) Seed Oil",
+      "inciName": "Calophyllum Inophyllum (Tamanu) Seed Oil",
       "category": "triglyceride",
       "sapKoh": 0.195,
       "sapNaoh": 0.13903743315508021,
       "sapMgKohPerGram": 195,
       "iodine": 111,
-      "ins": 82,
+      "ins": 84,
       "fattyAcids": {
         "oleic": 34,
         "stearic": 13,
@@ -5963,9 +5987,13 @@
           "notes": "legacy/FNWL differ by 6.2% (>5%); kept the source closest to the profile-derived SAP"
         },
         {
+          "source": "manual",
+          "notes": "INCI via correction — Corrects the FNWL chart species for the kamani product (\"Calophyllum Tacamahaca\"): kamani is Calophyllum inophyllum (matches CALOPHYLLUM INOPHYLLUM SEED OIL); FNWL's other tamanu row (oiltamanuexpid383) agrees."
+        },
+        {
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
-          "notes": "INCI \"Calophyllum Tacamahaca (Tamanu) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
+          "notes": "INCI \"Calophyllum Inophyllum (Tamanu) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
       "primarySource": "fnwl",
@@ -5983,7 +6011,7 @@
       "sapNaoh": 0.16969696969696968,
       "sapMgKohPerGram": 238,
       "iodine": 13,
-      "ins": 175,
+      "ins": 225,
       "fattyAcids": {
         "lauric": 47.5,
         "myristic": 26,
@@ -6027,7 +6055,7 @@
       "sapNaoh": 0.1376114081996435,
       "sapMgKohPerGram": 193,
       "iodine": 145,
-      "ins": 45,
+      "ins": 48,
       "fattyAcids": {
         "linoleic": 60,
         "oleic": 18.5,
@@ -6090,7 +6118,7 @@
       "sapNaoh": 0.13689839572192514,
       "sapMgKohPerGram": 192,
       "iodine": 119,
-      "ins": 71,
+      "ins": 73,
       "fattyAcids": {
         "oleic": 18,
         "stearic": 10,
@@ -6145,7 +6173,7 @@
       "sapNaoh": 0.13048128342245988,
       "sapMgKohPerGram": 183,
       "iodine": 128,
-      "ins": 58,
+      "ins": 55,
       "fattyAcids": {
         "oleic": 17,
         "stearic": 2,
@@ -6185,7 +6213,7 @@
       "sapNaoh": 0.1376114081996435,
       "sapMgKohPerGram": 193,
       "iodine": 95,
-      "ins": 97,
+      "ins": 98,
       "fattyAcids": {
         "oleic": 45,
         "stearic": 5,
@@ -6275,7 +6303,7 @@
       "sapNaoh": 0.06203208556149732,
       "sapMgKohPerGram": 87,
       "iodine": 11,
-      "ins": 84,
+      "ins": 76,
       "fattyAcids": {},
       "propertiesAvailable": false,
       "sources": [
@@ -6286,8 +6314,22 @@
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
         },
         {
-          "source": "manual",
-          "notes": "INCI via supplemental id"
+          "source": "fnwl",
+          "url": "https://www.fromnaturewithlove.com/resources/sapon.asp",
+          "mgKohPerGramMin": 78,
+          "mgKohPerGramMax": 95,
+          "mgKohPerGram": 86.5,
+          "sapKoh": 0.087,
+          "sapNaoh": 0.06203208556149732,
+          "notes": "FNWL chart entry: Carnauba Wax Flakes"
+        },
+        {
+          "source": "ldg",
+          "url": "https://www.ldg.international/saponification-chart/",
+          "mgKohPerGram": 86.5,
+          "mgKohPerGramMin": 78,
+          "mgKohPerGramMax": 95,
+          "notes": "LDG methodology cross-check (mg KOH/g lab units). LDG publishes no machine-readable export; FNWL matched SAP range used for alignment."
         },
         {
           "source": "cosing",
@@ -6295,8 +6337,8 @@
           "notes": "INCI \"Copernicia Cerifera (Carnauba) Wax\" verified against the EU CosIng Ingredients Inventory snapshot"
         }
       ],
-      "primarySource": "legacy_catalog",
-      "confidence": "legacy_only"
+      "primarySource": "fnwl",
+      "confidence": "verified"
     },
     {
       "id": "ucuuba-butter",

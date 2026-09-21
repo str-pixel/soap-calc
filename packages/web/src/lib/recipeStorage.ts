@@ -8,6 +8,7 @@ import {
   normalizeSettings,
 } from './recipe';
 import { isProcessId, processForLyeType, type ProcessId } from './process';
+import { isRecord } from './isRecord';
 import {
   createEmptyScentColor,
   migrateSavedScent,
@@ -55,10 +56,6 @@ type DraftPayload = {
   settings: RecipeSettings;
   updatedAt: string;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
 
 function safeSetItem(key: string, value: string): boolean {
   try {

@@ -110,6 +110,11 @@ export type RecipeViewModel = {
   overDilutionCertain: boolean;
   fixedBatchExtrasGrams: number;
   postCookSuperfat: AppliedPostCookSuperfat | null;
+  /** 1, or 1 − Σ PCSF % / 100 when a subtract reserve is applied: the factor every recipe oil
+   * and the lye were trimmed by. Surfaces that print what to WEIGH (Full recipe, batch sheet,
+   * pricing) multiply the formulation's oil weights by it; the formulation itself stays on
+   * the target oil weight. */
+  cookFactor: number;
   waterSuggestion: ReturnType<typeof suggestLyeWaterWithSplitLiquid> | null;
   lyeWaterStatus: ReturnType<typeof lyeSolutionWaterStatus> | null;
   splitAllocation: { lyeWaterGrams: number; targetLiquidGrams: number } | null;
@@ -298,19 +303,21 @@ export function useRecipeViewModel({
     [cookFactor, fullResult],
   );
   const totalOilGrams = displayTotals?.recipeOilWeightGrams ?? fullResult?.totalOilWeightGrams ?? 0;
-  // The PCSF oil is an added extra whenever the subtract reserve is not actually applied:
-  // append mode, or subtract mode under a lye excess where the cookFactor guard above forces
-  // cookFactor back to 1. cookFactor === 1 is the single source of truth for "was the reserve
-  // actually applied" — deriving this from the raw method string instead would let subtract's
-  // PCSF line item disagree with the batch weight it's excluded from (#1).
-  const pcsfIsExtra = cookFactor === 1;
-  // In subtract mode the real batch carries cook-factor-scaled lye/water, so batch-basis
-  // additive doses and the displayed/printed batch weight must share the same base.
-  const baseBatchGrams = pcsfIsExtra
-    ? displayTotals?.batchWeightGrams ?? fullResult?.totalBatchWeightGrams ?? 0
-    : (displayTotals?.recipeOilWeightGrams ?? 0) +
-      (result?.lyeWeightGrams ?? 0) +
-      (result?.waterWeightGrams ?? 0);
+  // Was the subtract reserve actually applied? cookFactor < 1 is the single source of truth:
+  // append mode, and subtract under a lye excess (the guard above forces cookFactor to 1),
+  // both leave the recipe untrimmed.
+  const pcsfReserveApplied = cookFactor < 1;
+  // The oils that actually go through the cook: the formulation × cookFactor — HP's "Total
+  // Oil Weight − PCSF = Starting soap calculator weight". Equal to totalOilGrams in append.
+  const cookOilGrams = totalOilGrams * cookFactor;
+  // The water-bearing base batch: trimmed oils + the lye/water sized to them. The PCSF oil is
+  // an extra in both methods (computeExtrasGrams), so subtract's total is
+  // trimmed oils + trimmed lye/water + PCSF — numerically the target oil weight + lye + water.
+  // The PCSF oil is deliberately excluded from this dose base in both methods: it goes in
+  // after the cook, append never counted it, and subtract now agrees.
+  const baseBatchGrams = pcsfReserveApplied
+    ? cookOilGrams + (result?.lyeWeightGrams ?? 0) + (result?.waterWeightGrams ?? 0)
+    : displayTotals?.batchWeightGrams ?? fullResult?.totalBatchWeightGrams ?? 0;
   // Ratio-mode overrides only know the total-liquid target post-calc: N × lye grams.
   const overrideTargetGrams = (r: { lyeWeightGrams: number }) =>
     splitOverride
@@ -397,7 +404,12 @@ export function useRecipeViewModel({
     () =>
       processOffers(process, 'dilution') && result
         ? calculateDilution({
-            anhydrousGrams: result.totalOilWeightGrams + result.lyeWeightGrams,
+            // Anhydrous soap is what the saponification made: the oils that went through
+            // the cook plus their alkali (LS:1543). A subtract reserve trimmed those oils by
+            // cookFactor; the PCSF oil is never soap in either method (append already keeps
+            // it out as an extra). Until 2026-09-19 this read the untrimmed oils under
+            // subtract and sized ~333 g of surplus water on a 10% reserve at 30%.
+            anhydrousGrams: result.totalOilWeightGrams * cookFactor + result.lyeWeightGrams,
             // The paste's water is the lye water PLUS whatever water the alternative
             // liquids carried in — every split-liquid stage is pre-cook, so that water is
             // already in the pot when dilution starts. Counting only the lye water would
@@ -415,6 +427,7 @@ export function useRecipeViewModel({
     [
       process,
       result,
+      cookFactor,
       cookWaterGrams,
       previewSettings.soapConcentrationPercent,
       previewSettings.kohPurityPercent,
@@ -677,13 +690,13 @@ export function useRecipeViewModel({
     if (!computedPcsf) return null;
     // Same parse as the cookFactor guard: a non-numeric main figure means "not applied".
     const main = Number(mainSuperfatRaw);
-    const unapplied = pcsfMethod === 'subtract' && pcsfIsExtra;
+    const unapplied = pcsfMethod === 'subtract' && !pcsfReserveApplied;
     const deliveredSuperfat =
       unapplied || !Number.isFinite(main)
         ? null
         : deliveredSuperfatPercent(main, computedPcsf.percentOfOil, pcsfMethod);
-    return { ...computedPcsf, isExtra: pcsfIsExtra, method: pcsfMethod, deliveredSuperfatPercent: deliveredSuperfat };
-  }, [computedPcsf, pcsfIsExtra, pcsfMethod, mainSuperfatRaw]);
+    return { ...computedPcsf, reserveApplied: pcsfReserveApplied, method: pcsfMethod, deliveredSuperfatPercent: deliveredSuperfat };
+  }, [computedPcsf, pcsfReserveApplied, pcsfMethod, mainSuperfatRaw]);
   const waterSuggestion = useMemo(() => {
     // Budget rows already allocated their water in the calc; only additive rows added at
     // trace still motivate a lye-water reduction, and never under an active override
@@ -1148,6 +1161,7 @@ export function useRecipeViewModel({
       splitLiquidRows,
       splitLiquidGrams,
       postCookSuperfat,
+      cookFactor,
       extrasGrams,
       scentColor: scentColorComputed,
       dilution,
@@ -1189,6 +1203,7 @@ export function useRecipeViewModel({
     insights,
     neutralization,
     postCookSuperfat,
+    cookFactor,
     previewSettings,
     previewState.lines,
     process,
@@ -1229,6 +1244,7 @@ export function useRecipeViewModel({
     scentColor: scentColorComputed,
     splitLiquidGrams,
     postCookSuperfat,
+    cookFactor,
     waterSuggestion,
     lyeWaterStatus,
     splitAllocation,

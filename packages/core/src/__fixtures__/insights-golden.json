@@ -44,18 +44,13 @@
    },
    {
     "level": "warning",
-    "code": "no_superfat_margin",
-    "message": "0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — normal variation in oil SAP values or a small scale error then leaves free lye, which can make the bar harsh or caustic. Most bar recipes keep a few percent superfat."
+    "code": "lye_excess_bar",
+    "message": "This sets more lye than the oils can saponify, so free alkali stays in the finished bar — it can burn, redden or itch skin, and damage eyes. Soda ash that keeps returning after it is rinsed off is the usual sign; zap- or pH-test before any use. A very small excess can cure out as sodium carbonate and wash away, while a large one needs a rebatch with added oil. Acid does not fix it: adding citric acid to a bar does not lower its pH, it just frees fatty acids."
    },
    {
     "level": "info",
     "code": "superfat_out_of_band",
     "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
-   },
-   {
-    "level": "info",
-    "code": "ls_lye_excess",
-    "message": "Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target."
    }
   ]
  },
@@ -69,18 +64,13 @@
    },
    {
     "level": "warning",
-    "code": "no_superfat_margin",
-    "message": "0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — normal variation in oil SAP values or a small scale error then leaves free lye, which can make the bar harsh or caustic. Most bar recipes keep a few percent superfat."
+    "code": "lye_excess_bar",
+    "message": "This sets more lye than the oils can saponify, so free alkali stays in the finished bar — it can burn, redden or itch skin, and damage eyes. Soda ash that keeps returning after it is rinsed off is the usual sign; zap- or pH-test before any use. A very small excess can cure out as sodium carbonate and wash away, while a large one needs a rebatch with added oil. Acid does not fix it: adding citric acid to a bar does not lower its pH, it just frees fatty acids."
    },
    {
     "level": "info",
     "code": "superfat_out_of_band",
     "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
-   },
-   {
-    "level": "info",
-    "code": "ls_lye_excess",
-    "message": "Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target."
    }
   ]
  },
@@ -476,11 +466,6 @@
     "level": "info",
     "code": "large_test_batch",
     "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
-   },
-   {
-    "level": "warning",
-    "code": "sugar_total_high",
-    "message": "Combined sugar-family additives (sugar/sorbitol, honey, yogurt) exceed ~5% of oil weight — the batch can tunnel or overheat, especially when insulated. Consider reducing the total dose."
    },
    {
     "level": "warning",
@@ -1651,11 +1636,6 @@
     "level": "warning",
     "code": "magnesium_salt_scum",
     "message": "Magnesium-bearing salts (Epsom, Dead Sea) react with soap to form an insoluble magnesium soap — the same scum hard water leaves, but built into the bar: weaker lather, slimy residue, and a higher rancidity risk. For a harder bar use table, sea, Himalayan or black lava salt, which are all sodium chloride and behave identically."
-   },
-   {
-    "level": "info",
-    "code": "hp_thick_phase_suppressant",
-    "message": "Salt or sodium lactate suppresses the thick, translucent \"mashed potato\" middle phase of a hot-process cook — expect a smoother, faster transition through cook."
    }
   ]
  },
@@ -1676,11 +1656,6 @@
     "level": "warning",
     "code": "ls_superfat_high",
     "message": "Liquid soap above ~3% superfat can turn cloudy and separate — keep the combined LS superfat around 1–3%."
-   },
-   {
-    "level": "info",
-    "code": "ls_salt_thickening",
-    "message": "Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go."
    }
   ]
  },
@@ -1725,7 +1700,7 @@
    {
     "level": "info",
     "code": "ls_salt_thickening",
-    "message": "Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go."
+    "message": "Salt in the lye water or the oils keeps the soap fluid through the cook instead of setting into a thick paste; it thickens once diluted and cooled. Every recipe has a turning point past which more salt thins it, so add any later brine a little at a time."
    }
   ]
  },
@@ -1930,7 +1905,7 @@
    {
     "level": "info",
     "code": "ls_salt_thickening",
-    "message": "Salt thickens diluted liquid soap up to a point, then thins it past that point — add a dilute brine gradually and test as you go. High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body."
+    "message": "Salt in the lye water or the oils keeps the soap fluid through the cook instead of setting into a thick paste; it thickens once diluted and cooled. Every recipe has a turning point past which more salt thins it, so add any later brine a little at a time. High-coconut liquid soap barely responds to salt — use guar or HEC instead if you need more body."
    }
   ]
  },

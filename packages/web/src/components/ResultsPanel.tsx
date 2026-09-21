@@ -57,6 +57,10 @@ type ResultsPanelProps = {
   labelWeight?: number | null;
   /** The vm's total oil weight in grams — used for the batch-weight breakdown readout. */
   totalOilGrams?: number;
+  /** useRecipeViewModel.cookFactor. REQUIRED: defaulted to 1, a caller that omits it beside
+   * an applied subtract reserve prints untrimmed oil weights directly above the row saying
+   * the oils above are already trimmed. Append mode passes 1. */
+  cookFactor: number;
 };
 
 /** One dial reading: digits, then the unit a step down and muted — the redesign's rule
@@ -138,6 +142,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   cureEstimate = null,
   labelWeight = null,
   totalOilGrams = 0,
+  cookFactor,
 }: ResultsPanelProps) {
   // Held in state, not on the element: a typing pause that momentarily lands the panel in
   // an early-return branch (input error, emptied oils) unmounts the <details>, and an
@@ -205,7 +210,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   const extrasNote = [
     additiveGrams > 0 ? 'additives' : null,
     splitLiquidGrams ? 'alternative liquid' : null,
-    postCookSuperfat?.isExtra ? 'post-cook superfat' : null,
+    postCookSuperfat ? 'post-cook superfat' : null,
     // Real mass in extrasGrams, named by the section it was entered in.
     scentColor && scentColor.fragranceGrams + scentColor.stabilizerGrams + scentColor.polysorbateGrams > 0
       ? 'fragrance'
@@ -214,7 +219,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   ].filter((x): x is string => x !== null);
   const extrasNoteText = joinNames(extrasNote);
   const batchWeight = batchWeightBreakdown({
-    oilGrams: totalOilGrams,
+    oilGrams: totalOilGrams * cookFactor,
     lyeGrams: result?.lyeWeightGrams ?? 0,
     waterGrams: result?.waterWeightGrams ?? 0,
     extrasGrams,
@@ -223,8 +228,8 @@ export const ResultsPanel = memo(function ResultsPanel({
   // summary can never quote a weight the results grid doesn't.
   const fullRecipe = buildFullRecipe({
     soapingTempF,
-    lines: result.lines.map((line) => ({ oilId: line.oilId, weightGrams: line.weightGrams })),
-    recipeOilWeightGrams,
+    lines: result.lines.map((line) => ({ oilId: line.oilId, weightGrams: line.weightGrams * cookFactor })),
+    recipeOilWeightGrams: recipeOilWeightGrams * cookFactor,
     weightUnit,
     lyeType,
     naohGrams: result.naohWeightGrams,
@@ -241,7 +246,9 @@ export const ResultsPanel = memo(function ResultsPanel({
   const addOrderSteps = buildAddOrderSteps({
     process,
     lyeType,
-    totalOilGrams: recipeOilWeightGrams,
+    // The cook weight, like the Full recipe above: "Weigh each oil — N g total" must name the
+    // same N the oil lines under it add up to, not the untrimmed formulation target.
+    totalOilGrams: recipeOilWeightGrams * cookFactor,
     lyeGrams: result.lyeWeightGrams,
     waterGrams: result.waterWeightGrams,
     weightUnit,
@@ -326,11 +333,17 @@ export const ResultsPanel = memo(function ResultsPanel({
           <div className="results-grid__item">
             <dt>Oil weight</dt>
             <dd>
-              <Weight grams={recipeOilWeightGrams} unit={weightUnit} />
+              {/* The oils that go into the pot — the same cook weight the printed sheet's
+                  identically labelled row quotes, so the PCSF row's "the oils above are
+                  already trimmed" reads true on screen too. The editor's Total oil field
+                  stays on the formulation target. */}
+              <Weight grams={recipeOilWeightGrams * cookFactor} unit={weightUnit} />
               {excludedOilWeightGrams > 0 && (
                 <span className="results-excluded">
                   {' '}
-                  ({formatWeight(excludedOilWeightGrams, weightUnit)} excluded from lye)
+                  {/* Excluded oils are part of the trimmed formulation too — the row above
+                      already reads at cook weight, so this parenthetical must match. */}
+                  ({formatWeight(excludedOilWeightGrams * cookFactor, weightUnit)} excluded from lye)
                 </span>
               )}
             </dd>
@@ -387,7 +400,7 @@ export const ResultsPanel = memo(function ResultsPanel({
             <div className="results-grid__item">
               <dt>
                 Post-cook superfat ({postCookSuperfatOilName})
-                {postCookSuperfatProvenance(postCookSuperfat.isExtra)}
+                {postCookSuperfatProvenance(postCookSuperfat.reserveApplied)}
               </dt>
               <dd>
                 <Weight grams={postCookSuperfat.grams} unit={weightUnit} />

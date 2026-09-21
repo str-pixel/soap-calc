@@ -1,3 +1,5 @@
+import type { AdditiveStage } from './additives.js';
+
 export function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -11,7 +13,14 @@ function isLikelyFragranceName(name: string): boolean {
   return /\b(fragrance|essential oil|perfume|parfum|eo)\b/i.test(name);
 }
 
-export type NamedCatalogEntry = { catalogId: string; name: string };
+export type NamedCatalogEntry = {
+  catalogId: string;
+  name: string;
+  /** Where the line is added — additives.ts AdditiveStage, imported type-only so it is
+   * erased at build time and this module still imports nothing at runtime. Optional: rules
+   * that read it treat an unknown stage as the catalog's default for that additive. */
+  addAt?: AdditiveStage;
+};
 
 /** Name-only keyword match across additive lines, with the same fragrance guard
  * additiveMatches uses. For substances that have no catalog entry (and shouldn't — e.g.
@@ -27,18 +36,28 @@ export function additiveNameMatches(
   );
 }
 
+/** The entries `additiveMatches` would match — by catalog id, or by a word-boundary keyword
+ * on a name that does not read as a fragrance. Rules that need the matched LINES (to read
+ * their stage) call this; the boolean form below stays for everyone else. */
+export function matchingAdditiveEntries<T extends NamedCatalogEntry>(
+  entries: T[] | undefined,
+  catalogId: string,
+  nameKeyword: string,
+): T[] {
+  if (!entries?.length) return [];
+  return entries.filter(
+    (entry) =>
+      entry.catalogId === catalogId ||
+      (!isLikelyFragranceName(entry.name) && wordBoundaryMatch(entry.name, nameKeyword)),
+  );
+}
+
 export function additiveMatches(
   entries: NamedCatalogEntry[] | undefined,
   catalogId: string,
   nameKeyword: string,
 ): boolean {
-  if (!entries?.length) return false;
-  return entries.some(
-    (entry) =>
-      entry.catalogId === catalogId ||
-      (!isLikelyFragranceName(entry.name) &&
-        wordBoundaryMatch(entry.name, nameKeyword)),
-  );
+  return matchingAdditiveEntries(entries, catalogId, nameKeyword).length > 0;
 }
 
 export type NamedOilEntry = { oilId: string; name: string };

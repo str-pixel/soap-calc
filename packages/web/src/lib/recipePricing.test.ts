@@ -11,6 +11,7 @@ import {
   computeRecipePricing,
   hasMissingMaterialPrice,
   type RecipePricingContext,
+  type RecipePricingSource,
 } from './recipePricing';
 
 const ctx: RecipePricingContext = {
@@ -108,6 +109,7 @@ describe('buildRecipePricingContext (deep-review)', () => {
 
   it('includes only positive-weight oil lines', () => {
     const out = buildRecipePricingContext({
+      cookFactor: 1,
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1400,
       splitLiquids: [], postCookSuperfat: null,
     });
@@ -117,24 +119,27 @@ describe('buildRecipePricingContext (deep-review)', () => {
 
   it('prices an append-mode post-cook superfat oil via its oil id', () => {
     const out = buildRecipePricingContext({
+      cookFactor: 1,
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1450,
       splitLiquids: [],
-      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }], isExtra: true },
+      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }] },
     });
     expect(out.oilLines.some((o) => o.oilId === 'jojoba-oil' && o.grams === 50)).toBe(true);
   });
 
-  it('leaves a subtract-mode (reserved) superfat out — those grams are already priced', () => {
-    const out = buildRecipePricingContext({
-      lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1400,
-      splitLiquids: [],
-      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }], isExtra: false },
+  it('prices the trimmed recipe oils and the separately weighed PCSF oil under subtract', () => {
+    const ctx = buildRecipePricingContext({
+      lines: [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }],
+      computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1500, splitLiquids: [],
+      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }] },
+      cookFactor: 0.95,
     });
-    expect(out.oilLines.some((o) => o.oilId === 'jojoba-oil')).toBe(false);
+    expect(ctx.oilLines.map((l) => [l.oilId, l.grams])).toEqual([['olive-oil', 950], ['jojoba-oil', 50]]);
   });
 
   it('exposes an enabled split liquid as a priceable material', () => {
     const out = buildRecipePricingContext({
+      cookFactor: 1,
       lines, computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1700,
       splitLiquids: [{ key: 'row-1', name: 'goat milk', grams: 300 }], postCookSuperfat: null,
     });
@@ -173,7 +178,7 @@ describe('second-wave hardening', () => {
     const base = {
       lines: [{ key: 'l1', oilId: 'olive-oil', weightGrams: '900' }],
       computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1700,
-      postCookSuperfat: null,
+      postCookSuperfat: null, cookFactor: 1,
     };
     const a = buildRecipePricingContext({ ...base, splitLiquids: [{ key: 'row-1', name: 'goat milk', grams: 300 }] });
     const b = buildRecipePricingContext({ ...base, splitLiquids: [{ key: 'row-1', name: 'Goat milk 2%', grams: 300 }] });
@@ -191,6 +196,7 @@ describe('the Fragrance & colorants section is priced', () => {
           portions: [],
         }, { process: 'cp', totalOilGrams: 1000, productGrams: 1300 });
     const built = buildRecipePricingContext({
+      cookFactor: 1,
       lines: [], computedAdditives: [], lyeGrams: 0, batchWeightWithExtras: 1000, splitLiquids: [], postCookSuperfat: null, scentColor: scent,
     });
     const scentRows = built.additives.filter((a) => a.group === 'fragrance' || a.group === 'colorant');
@@ -210,6 +216,7 @@ describe('the Fragrance & colorants section is priced', () => {
           portions: [],
         }, { process: 'ls', totalOilGrams: 1000, solutionGrams: 3000, deliveredSuperfatPercent: 2, productGrams: 3000 });
     const built = buildRecipePricingContext({
+      cookFactor: 1,
       lines: [], computedAdditives: [], lyeGrams: 0, batchWeightWithExtras: 3000, splitLiquids: [], postCookSuperfat: null, scentColor: scent,
     });
     expect(built.additives.filter((a) => a.group === 'fragrance' || a.group === 'colorant').map((a) => [a.catalogId, a.grams])).toEqual([
@@ -233,5 +240,21 @@ describe('scentPriceKey shares the name rule with additivePriceKey', () => {
   it('trims and lower-cases, and names the unnamed', () => {
     expect(scentPriceKey(FRAGRANCE_PRICE_PREFIX, '  Rose Absolute ')).toBe('fragrance:name:rose absolute');
     expect(scentPriceKey(FRAGRANCE_PRICE_PREFIX, '')).toBe('fragrance:name:unnamed');
+  });
+});
+
+describe('review fixes 2026-09-21: the cook factor is not optional', () => {
+  it('will not compile a pricing source that omits it', () => {
+    // cookFactor replaced a REQUIRED isExtra flag. Left optional, a call site that prices a
+    // subtract-mode reserve and forgets it charges the full recipe oils AND the reserved
+    // oil — the reserve counted twice — while batchWeightWithExtras (the cost divisor) is
+    // unchanged, so per-unit cost is silently wrong with no type error to catch it.
+    // @ts-expect-error cookFactor is required
+    const source: RecipePricingSource = {
+      lines: [{ key: 'a', oilId: 'olive-oil', weightGrams: '1000' }],
+      computedAdditives: [], lyeGrams: 130, batchWeightWithExtras: 1500, splitLiquids: [],
+      postCookSuperfat: { oils: [{ oilId: 'jojoba-oil', grams: 50 }] },
+    };
+    expect(source.lines).toHaveLength(1);
   });
 });

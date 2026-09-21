@@ -44,6 +44,16 @@
       "inciName": "Pistacia Vera (Pistachio) Seed Oil",
       "source": "cosing",
       "notes": "INCI uses Seed Oil, not \"Nut Oil\" (matches PISTACIA VERA SEED OIL); kept here rather than byOilId so a future FNWL product mapping cannot reintroduce the Nut Oil variant"
+    },
+    "grapeseed-oil": {
+      "inciName": "Vitis vinifera (Grape) Seed Oil",
+      "source": "cosing",
+      "notes": "The FNWL 'Grape Seed Oil' product (OILGRAPECPCL64) carries a tocopherol-blend chart INCI (\"…Seed Oil, Tocopherol\"); the oil itself is the plain seed oil (matches VITIS VINIFERA (GRAPE) SEED OIL)."
+    },
+    "tamanu-oil-kamani": {
+      "inciName": "Calophyllum Inophyllum (Tamanu) Seed Oil",
+      "source": "cosing",
+      "notes": "Corrects the FNWL chart species for the kamani product (\"Calophyllum Tacamahaca\"): kamani is Calophyllum inophyllum (matches CALOPHYLLUM INOPHYLLUM SEED OIL); FNWL's other tamanu row (oiltamanuexpid383) agrees."
     }
   },
   "byOilId": {
@@ -239,11 +249,6 @@
       "source": "manual",
       "notes": "CosIng #92469 — no goat-specific INCI; generic tallow"
     },
-    "tamanu-oil-kamani": {
-      "inciName": "Calophyllum Inophyllum (Tamanu) Seed Oil",
-      "source": "cosing",
-      "notes": "INCI is Seed Oil (matches CALOPHYLLUM INOPHYLLUM SEED OIL); FNWL alias → Tamanu Foraha Oil"
-    },
     "wheat-germ-oil": {
       "inciName": "Triticum Vulgare (Wheat) Germ Oil",
       "source": "manual",
@@ -402,10 +407,6 @@
       "inciName": "Tallow",
       "source": "fnwl_product",
       "notes": "CosIng #92469"
-    },
-    "oiltamanucpvirin728": {
-      "inciName": "Calophyllum Tacamahaca (Tamanu) Seed Oil",
-      "source": "fnwl_product"
     }
   },
   "displayHints": {}

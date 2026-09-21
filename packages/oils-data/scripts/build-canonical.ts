@@ -33,7 +33,8 @@ import { loadSupplementalInci, resolveOilInci } from '../src/resolve-inci.js';
 import { isInciCorrectionRedundant } from '../src/inci-redundancy.js';
 import { LEGACY_SAP_CORRECTIONS } from '../src/sap-corrections.js';
 import { IODINE_CORRECTIONS } from '../src/iodine-corrections.js';
-import { classifyProfileIodineDeviations } from '../src/profile-iodine-deviations.js';
+import { KNOWN_PROFILE_SAP_DEVIATIONS } from '../src/profile-sap-deviations.js';
+import { classifyProfileIodineDeviations, KNOWN_PROFILE_IODINE_DEVIATIONS } from '../src/profile-iodine-deviations.js';
 import { classifyExternalReferenceDeviations } from '../src/external-reference-deviations.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
 import { incompleteProfileOils } from '../src/profile-completeness.js';
@@ -409,6 +410,22 @@ function main() {
       report.iodineCorrected.push(leg.name);
     }
 
+    // INS = round(SAP mg KOH/g − iodine): the definition the two correction paths above
+    // already apply. Until 2026-09-19 it was applied ONLY there, and every other oil kept
+    // the legacy catalog's INS — a figure that catalog computed from ITS SAP and iodine.
+    // Once resolution moved the SAP (45 FNWL oils) the shipped INS no longer matched the
+    // shipped SAP and iodine (52 of 127 oils; tucuma read 175 where its own numbers give
+    // 225). Tars keep their placeholder: no triglyceride, and the web excludes them.
+    if (category !== 'tar') {
+      // Derived or ABSENT — never inherited. With no iodine the index cannot be computed,
+      // and the legacy catalog's figure was computed from ITS SAP, which resolution may
+      // have moved; carrying it over would ship a number that contradicts the SAP beside
+      // it, and the validator's consistency check skips exactly those rows. Dropping it
+      // costs nothing downstream: calculateRecipeIndexes already ignores any oil missing
+      // either value. validate-canonical asserts this both ways.
+      ins = iodine !== undefined ? Math.round(sapKoh * 1000 - iodine) : undefined;
+    }
+
     // The emitted public id may be overridden (e.g. a mislabeled slug); internal lookups above
     // still use baseSlug, and the web oilById migration resolves the old id for saved recipes.
     const id = OIL_ID_OVERRIDES[baseSlug] ?? baseSlug;
@@ -483,8 +500,11 @@ function main() {
   const knownOilKeys = new Set([...oilIds, ...usedSlugs, ...excludedOilIds]);
   const oilKeyedEntries = [
     ...Object.keys(supplementalInci.inciCorrections),
+    ...Object.keys(supplementalInci.byOilId),
     ...Object.keys(LEGACY_SAP_CORRECTIONS),
     ...Object.keys(IODINE_CORRECTIONS),
+    ...Object.keys(KNOWN_PROFILE_SAP_DEVIATIONS),
+    ...Object.keys(KNOWN_PROFILE_IODINE_DEVIATIONS),
     ...Object.keys(OIL_DISPLAY_NAMES),
     ...Object.keys(OIL_ALLERGEN_ORIGINS),
     ...WAX_ESTER_OIL_IDS,
@@ -506,6 +526,16 @@ function main() {
     console.warn(
       `  Oil-keyed entries aimed at excluded oils (inert — drop them, or leave them ready if the oil may return): ${inertOilKeys.join(', ')}`,
     );
+  }
+
+  // An excluded id that no longer matches any legacy row is dead weight in excluded-oils.json
+  // (the rows it named have since left soap_oils.json). Warn, so the next exclusion prunes it.
+  // Compared against the legacy slugs, not usedSlugs — that set is filled AFTER the exclusion
+  // `continue`, so every excluded id is absent from it by construction.
+  const legacySlugs = new Set(legacy.oils.map((leg) => slugify(leg.name)));
+  const deadExcludedIds = [...excludedOilIds].filter((id) => !legacySlugs.has(id) && !oilIds.has(id));
+  if (deadExcludedIds.length) {
+    console.warn(`  Excluded ids matching no legacy row (prune from excluded-oils.json): ${deadExcludedIds.join(', ')}`);
   }
 
   // A SAP correction only applies when the oil has no FNWL match. If a built oil carries a
@@ -590,7 +620,6 @@ function main() {
       sapRole: oil.sapRole,
       sapKoh: oil.sapKoh,
       sapNaoh: oil.sapNaoh,
-      confidence: oil.confidence,
       propertiesAvailable: oil.propertiesAvailable,
       ...(oil.iodine !== undefined ? { iodine: oil.iodine } : {}),
       ...(oil.ins !== undefined ? { ins: oil.ins } : {}),

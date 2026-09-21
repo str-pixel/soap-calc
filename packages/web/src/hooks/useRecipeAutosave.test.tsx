@@ -140,6 +140,22 @@ describe('useRecipeAutosave', () => {
     vi.useRealTimers();
   });
 
+  it('saves the COMMITTED state on pagehide, never an in-flight draft', () => {
+    // The hook takes no draft channel at all: a draft is not yet the maker's intent, and
+    // resolving one here would persist "3" typed on the way to "350" — or, through the
+    // total, rescale every oil line. This listener also fires on every mobile app-switch.
+    // e2e/recipe-ui.spec.ts ('autosave persists the committed weight, not a mid-typed
+    // value') pins the same contract end to end, through a real reload.
+    const lines = createStarterLines();
+    renderHook(() =>
+      useRecipeAutosave('cp', 'r', lines, DEFAULT_SETTINGS, [] as AdditiveLine[], SCENT),
+    );
+    window.dispatchEvent(new Event('pagehide'));
+    const draft = loadDraft('cp');
+    expect(draft?.lines[0].weightGrams).toBe(lines[0].weightGrams);
+    expect(draft?.settings.batchOilGrams).toBe(DEFAULT_SETTINGS.batchOilGrams);
+  });
+
   it('removes its pagehide/visibilitychange listeners on unmount', () => {
     vi.useFakeTimers();
     const addSpy = vi.spyOn(window, 'addEventListener');
@@ -225,6 +241,34 @@ describe('externally-deleted draft (third wave)', () => {
     window.dispatchEvent(new Event('pagehide'));
     // Writing into an EMPTY slot cannot clobber newer data — the flush must restore it.
     expect(loadDraft('cp')?.name).toBe('my recipe');
+    vi.useRealTimers();
+  });
+});
+
+describe('review fixes 2026-09-21: a hide-flush leaves the workspace clean', () => {
+  it('does not re-save on the next hide when nothing changed since the last one', () => {
+    vi.useFakeTimers();
+    const lines = createStarterLines();
+    // The flush stores what it saved into lastSavedRef, and isDirty() compares that by
+    // identity. Storing a freshly SPREAD settings object after a save left it permanently
+    // unequal to settingsRef, so the workspace could never read clean again and every
+    // later hide re-wrote byte-identical state.
+    const { rerender } = renderHook(
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, [], SCENT),
+      { initialProps: { name: 'Draft' } },
+    );
+    rerender({ name: 'my recipe' });
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange')); // dirty: this one must save
+    expect(loadDraft('cp')?.name).toBe('my recipe');
+
+    const setItemSpy = vi.spyOn(window.localStorage, 'setItem');
+    document.dispatchEvent(new Event('visibilitychange')); // nothing changed: must be a no-op
+    expect(setItemSpy.mock.calls.length).toBe(0);
+
+    setItemSpy.mockRestore();
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
     vi.useRealTimers();
   });
 });

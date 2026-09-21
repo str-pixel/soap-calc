@@ -96,6 +96,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
     splitLiquidRows,
     splitLiquidGrams,
     postCookSuperfat,
+    cookFactor,
     extrasGrams,
     scentColor,
     dilution,
@@ -117,7 +118,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   const scentColorantRows = scentColor.colorants.filter(scentRowIsMaterial);
   const scentSupplement = scentSupplements(scentColor, weightUnit);
 
-  const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0);
+  const includedLines = result.lines.filter((line) => line.includedInLye && line.weightGrams > 0).map((line) => ({ ...line, weightGrams: line.weightGrams * cookFactor }));
 
   const isDualLye = settings.lyeType === 'dual';
   const satUnsat = fattyAcids.profile ? saturatedUnsaturatedRatio(fattyAcids.profile) : null;
@@ -320,7 +321,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
               .map((line) => (
                 <tr key={line.key}>
                   <td>{batchSheetOilName(line.oilId)}</td>
-                  <td>{formatWeight(Number(line.weightGrams), weightUnit)}</td>
+                  <td>{formatWeight(Number(line.weightGrams) * cookFactor, weightUnit)}</td>
                   <td>{formatGrams(linePercents.get(line.key) ?? 0, 1)}%</td>
                 </tr>
               ))}
@@ -390,7 +391,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           </div>
           <div>
             <dt>Oil weight</dt>
-            <dd>{formatWeight(displayTotals.recipeOilWeightGrams, weightUnit)}</dd>
+            <dd>{formatWeight(displayTotals.recipeOilWeightGrams * cookFactor, weightUnit)}</dd>
           </div>
           <div>
             <dt>Batch weight</dt>
@@ -731,7 +732,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
 
       {postCookSuperfat && (
         /* Its own section, the same vocabulary as the on-screen Full recipe ("% of oil",
-           "from oils above") — the sheet and the screen are cross-checked at the bench,
+           "weighed separately") — the sheet and the screen are cross-checked at the bench,
            so the reserved oil must read identically on both. Placed after Dilution and
            Neutralize: the manifest lists the PCSF last of all materials (after the
            After-dilution stage on LS), and the printed timing must agree. */
@@ -740,7 +741,7 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
           <ul className="batch-sheet__list">
             {heaviestFirst(postCookSuperfat.oils, (oil) => oil.grams).map((oil, i) => (
               <li key={`pcsf-${i}`}>
-                {batchSheetOilName(oil.oilId)} — {postCookSuperfatLineDetail(oil, weightUnit, postCookSuperfat.isExtra)}
+                {batchSheetOilName(oil.oilId)} — {postCookSuperfatLineDetail(oil, weightUnit, postCookSuperfat.reserveApplied)}
               </li>
             ))}
           </ul>

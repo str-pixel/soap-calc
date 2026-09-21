@@ -192,3 +192,18 @@ test('handleApplySuggestedOilGrams still applies a rounded oil total (mold-sizer
   expect(synced.batchOilGrams).toBe('850');
   expect(synced.batchSetByUser).toBe(true);
 });
+
+test('the export flush commits drafts into editor state — export IS a user action, a tab hide is not', () => {
+  const clearAllDrafts = vi.fn();
+  const applyEdit = vi.fn();
+  const deps = makeDeps({
+    drafts: { 'batch-total': '1' },
+    clearAllDrafts,
+    editor: { ...makeDeps().editor, applyEdit },
+  });
+
+  useRecipeInputs(deps).flushCommittedDrafts();
+
+  expect(clearAllDrafts).toHaveBeenCalledTimes(1);
+  expect(applyEdit).toHaveBeenCalledTimes(1);
+});

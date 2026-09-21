@@ -24,3 +24,24 @@ export const OIL_ID_OVERRIDES: Record<string, string> = {
   'pine-tar-lye-calc-only-no-fa': 'pine-tar', // "lye calc only no FA" instruction in the slug
   'pracaxi-seed-oil-hair-conditioner': 'pracaxi-seed-oil', // "hair conditioner" note in the slug
 };
+
+/**
+ * Emitted public id → the build slug that oil was built under, for the correction tables
+ * that are keyed by BUILD SLUG (IODINE_CORRECTIONS and friends: the build looks them up
+ * with `baseSlug`, before the id override is applied).
+ *
+ * Only RENAME entries invert: there the build slug IS the key and the value is what gets
+ * emitted. A DEDUP-MERGE's key is an EXCLUDED oil that is never built at all, and its value
+ * is a DIFFERENT, surviving oil built under its own slug — inverting that entry points the
+ * survivor at a slug the build never used for it, so a correction keyed correctly is read
+ * under the wrong key and the check silently stops checking.
+ */
+export function buildSlugByEmittedId(excludedOilIds: Iterable<string>): Map<string, string> {
+  const excluded = new Set(excludedOilIds);
+  return new Map(
+    Object.entries(OIL_ID_OVERRIDES)
+      .filter(([slug]) => !excluded.has(slug))
+      .map(([slug, id]) => [id, slug] as const),
+  );
+}
+

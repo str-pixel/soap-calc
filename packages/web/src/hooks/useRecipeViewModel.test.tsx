@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, test, vi } from 'vitest';
-import { render, cleanup } from '@testing-library/react';
+import { render, cleanup, renderHook, act } from '@testing-library/react';
+import { useState } from 'react';
 import { useRecipeViewModel } from './useRecipeViewModel';
 import { createEmptyScentColor, normalizeScentColor, type ScentColor } from '../lib/scentColor';
 import {
@@ -8,10 +9,16 @@ import {
   DEFAULT_SETTINGS,
   createEmptyAdditives,
   normalizePostCookSuperfatOils,
+  normalizeSettings,
   type AdditiveLine,
   type RecipeSettings,
 } from '../lib/recipe';
-import { processProfileById, type ProcessId } from '../lib/process';
+import {
+  processProfileById,
+  defaultsForProcess,
+  normalizeSettingsWithinProcess,
+  type ProcessId,
+} from '../lib/process';
 import { correctedDilutionWaterGrams } from '../lib/measuredPaste';
 import { lsFinishedVolumeMl, lsPartialDilution, gradualDilutionFrom } from '@soap-calc/core';
 
@@ -85,7 +92,7 @@ test('postCookSuperfat is null when off, and its grams fold into batchWeightWith
     grams: expect.any(Number),
     // Append mode: the applied-state flag AND the method ride on the object, stamped by
     // the vm — consumers gate on the method without re-reading settings.
-    isExtra: true,
+    reserveApplied: false,
     method: 'append',
     deliveredSuperfatPercent: expect.any(Number),
   });
@@ -1271,4 +1278,108 @@ test('a recipe with no acid is untouched by the compensation path', () => {
   probe((v) => { vm = v as { baseBatchGrams: number; batchMassGrams: number }; }, {});
   const v = vm as { baseBatchGrams: number; batchMassGrams: number };
   expect(v.batchMassGrams).toBe(v.baseBatchGrams);
+});
+
+test('subtract trims the recipe to its cook weight: cookFactor, LS anhydrous soap and batch weight (HP:5684-5703, LS:1543)', () => {
+  // Same LS shape the file's other liquid-soap probes use (KOH, ratio water, a dilution target).
+  const pcsf = {
+    lyeType: 'koh' as const,
+    waterMode: 'lye_water_ratio' as const,
+    lyeWaterRatio: '2',
+    superfatPercent: '2',
+    soapConcentrationPercent: '30',
+    postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '10' }],
+  };
+  let append: any;
+  let subtract: any;
+  probe((vm) => { append = vm; }, { ...pcsf, postCookSuperfatMethod: 'append' }, 'ls');
+  probe((vm) => { subtract = vm; }, { ...pcsf, postCookSuperfatMethod: 'subtract' }, 'ls');
+
+  expect(append.cookFactor).toBe(1);
+  expect(subtract.cookFactor).toBeCloseTo(0.9);
+  // The formulation stays on the target oil weight; the cook uses 90% of it.
+  expect(subtract.totalOilGrams).toBeCloseTo(append.totalOilGrams);
+  // Anhydrous soap = the oils that were saponified + their alkali, in BOTH methods.
+  expect(append.dilution.anhydrousGrams).toBeCloseTo(append.totalOilGrams + append.result.lyeWeightGrams);
+  expect(subtract.dilution.anhydrousGrams).toBeCloseTo(0.9 * subtract.totalOilGrams + subtract.result.lyeWeightGrams);
+  // The PCSF oil is weighed separately in both methods and rides into the batch weight.
+  expect(subtract.postCookSuperfat.reserveApplied).toBe(true);
+  expect(append.postCookSuperfat.reserveApplied).toBe(false);
+  expect(subtract.batchWeightWithExtras).toBeCloseTo(
+    0.9 * subtract.totalOilGrams + subtract.result.lyeWeightGrams + subtract.result.waterWeightGrams + subtract.postCookSuperfat.grams,
+  );
+  // Following the sheet literally now lands on the claimed superfat: trimmed oils + PCSF = target.
+  expect(0.9 * subtract.totalOilGrams + subtract.postCookSuperfat.grams).toBeCloseTo(subtract.totalOilGrams);
+});
+
+test('the PCSF oil is deliberately out of the subtract dose base, same as append', () => {
+  // Same LS shape as the cook-weight test above.
+  const pcsf = {
+    lyeType: 'koh' as const,
+    waterMode: 'lye_water_ratio' as const,
+    lyeWaterRatio: '2',
+    superfatPercent: '2',
+    soapConcentrationPercent: '30',
+    postCookSuperfatOils: [{ oilId: 'olive-oil', percent: '10' }],
+  };
+  let append: any;
+  let subtract: any;
+  probe((vm) => { append = vm; }, { ...pcsf, postCookSuperfatMethod: 'append' }, 'ls');
+  probe((vm) => { subtract = vm; }, { ...pcsf, postCookSuperfatMethod: 'subtract' }, 'ls');
+
+  // baseBatchGrams is the "% of batch" dose base: trimmed oils + the lye/water sized to
+  // them, in subtract; the untrimmed equivalent in append.
+  expect(subtract.baseBatchGrams).toBeCloseTo(
+    subtract.cookFactor * subtract.totalOilGrams + subtract.result.lyeWeightGrams + subtract.result.waterWeightGrams,
+  );
+  expect(append.baseBatchGrams).toBeCloseTo(
+    append.totalOilGrams + append.result.lyeWeightGrams + append.result.waterWeightGrams,
+  );
+  // Neither dose base includes the PCSF oil — it rides in only once the extras are added,
+  // in both methods (no other extras here, so the two figures cover the whole gap).
+  expect(subtract.baseBatchGrams + subtract.postCookSuperfat.grams).toBeCloseTo(subtract.batchWeightWithExtras);
+  expect(append.baseBatchGrams + append.postCookSuperfat.grams).toBeCloseTo(append.batchWeightWithExtras);
+});
+
+function useKeystrokeHarness({ process }: { process: ProcessId }) {
+  const [settings, setSettings] = useState<RecipeSettings>(() =>
+    normalizeSettingsWithinProcess(
+      normalizeSettings({ ...DEFAULT_SETTINGS, ...defaultsForProcess(process), batchSetByUser: true }),
+      process,
+    ),
+  );
+  const [lines] = useState(() => createStarterLines());
+  const [additives] = useState(() => createEmptyAdditives());
+  const [scent] = useState(() => createEmptyScentColor());
+  const vm = useRecipeViewModel({
+    recipeName: 'r', lines, settings, additives, scentColor: scent, drafts: {}, weightUnit: 'g', process,
+  });
+  return { vm, setSettings };
+}
+
+test('a keystroke in a field the lye calc does not read leaves result, cure and properties untouched', () => {
+  // Third element: whether the INSIGHTS may keep their identity too. The soaping temperature
+  // is read directly by the insight rules (soaping_temp_high, ls_coconut_hot_cook) and is a
+  // dependency of useFormulationInsights' own memo, so that row legitimately recomputes them.
+  for (const [process, patch, insightsStable] of [
+    ['cp', { batchNotes: 'x' }, true],
+    ['cp', { soapingTempF: '126' }, false],
+    ['ls', { preservativeDosePct: '0.9' }, true],
+  ] as const) {
+    const { result } = renderHook(useKeystrokeHarness, { initialProps: { process } });
+    const before = result.current.vm;
+    act(() => result.current.setSettings((s) => ({ ...s, ...patch })));
+    const after = result.current.vm;
+    expect(after.result).toBe(before.result);
+    expect(after.cureEstimate).toBe(before.cureEstimate);
+    expect(after.properties).toBe(before.properties);
+    if (insightsStable) expect(after.insights).toBe(before.insights);
+  }
+});
+
+test('a keystroke in a field the lye calc DOES read recomputes it', () => {
+  const { result } = renderHook(useKeystrokeHarness, { initialProps: { process: 'cp' as ProcessId } });
+  const before = result.current.vm;
+  act(() => result.current.setSettings((s) => ({ ...s, superfatPercent: '8' })));
+  expect(result.current.vm.result).not.toBe(before.result);
 });
