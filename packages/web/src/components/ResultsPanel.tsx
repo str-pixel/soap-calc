@@ -57,8 +57,10 @@ type ResultsPanelProps = {
   labelWeight?: number | null;
   /** The vm's total oil weight in grams — used for the batch-weight breakdown readout. */
   totalOilGrams?: number;
-  /** useRecipeViewModel.cookFactor; defaults to 1 for legacy callers. */
-  cookFactor?: number;
+  /** useRecipeViewModel.cookFactor. REQUIRED: defaulted to 1, a caller that omits it beside
+   * an applied subtract reserve prints untrimmed oil weights directly above the row saying
+   * the oils above are already trimmed. Append mode passes 1. */
+  cookFactor: number;
 };
 
 /** One dial reading: digits, then the unit a step down and muted — the redesign's rule
@@ -140,7 +142,7 @@ export const ResultsPanel = memo(function ResultsPanel({
   cureEstimate = null,
   labelWeight = null,
   totalOilGrams = 0,
-  cookFactor = 1,
+  cookFactor,
 }: ResultsPanelProps) {
   // Held in state, not on the element: a typing pause that momentarily lands the panel in
   // an early-return branch (input error, emptied oils) unmounts the <details>, and an

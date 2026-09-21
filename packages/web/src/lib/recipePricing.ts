@@ -106,8 +106,11 @@ export interface RecipePricingSource {
   splitLiquids: Array<{ key: string; name: string; grams: number }>;
   /** Post-cook superfat oils — weighed separately in both methods, so always priced. */
   postCookSuperfat: { oils: { oilId: string; grams: number }[] } | null;
-  /** useRecipeViewModel.cookFactor: a subtract reserve trims every recipe oil by this. */
-  cookFactor?: number;
+  /** useRecipeViewModel.cookFactor: a subtract reserve trims every recipe oil by this.
+   * REQUIRED, like the isExtra flag it replaced (and like batchSheet.ts's own field):
+   * omitting it beside an applied reserve prices the full oils AND the reserved oil, so the
+   * reserve is counted twice while the cost divisor is unchanged. Append mode passes 1. */
+  cookFactor: number;
   /** The Fragrance & colorants section — every gram of it is in batchWeightWithExtras. */
   scentColor?: ComputedScentColor;
 }
@@ -116,7 +119,7 @@ export interface RecipePricingSource {
  * `batchWeightWithExtras` (the cost divisor) must be priceable here, or per-unit
  * cost is silently understated. */
 export function buildRecipePricingContext(src: RecipePricingSource): RecipePricingContext {
-  const cookFactor = src.cookFactor ?? 1;
+  const cookFactor = src.cookFactor;
   const oilLines = src.lines
     .filter((l) => (Number(l.weightGrams) || 0) > 0)
     .map((l) => ({
