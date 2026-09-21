@@ -319,7 +319,12 @@ function capAllocatedSum(oils: PostCookSuperfatOil[]): PostCookSuperfatOil[] {
     runningSum = 100;
     // Percents display at one decimal (PERCENT_ROUNDING_EPSILON, lineWeightSync.ts); write
     // the cap the same way, or 100 − 66.6 lands in the input as "33.400000000000006".
-    return { ...oil, percent: String(Math.round(headroom * 10) / 10) };
+    // FLOOR, not round: a headroom of 98.99 rounds UP to 99.0 and the rows then sum to
+    // 100.01 — over the cap this function exists to enforce. Down is the only safe way.
+    // Float noise is rounded off FIRST, at the third decimal, or the floor eats a real
+    // tenth: 100 − 64.4 is 35.599999999999994, which floors to 35.5 (123 of the 999
+    // one-decimal first rows). Round the noise, then floor the tenth.
+    return { ...oil, percent: String(Math.floor(Math.round(headroom * 1000) / 100) / 10) };
   });
 }
 
@@ -574,6 +579,35 @@ function settingString(value: unknown, fallback: string, maxLength = MAX_SETTING
   return fallback;
 }
 
+/** Every setting whose value is read as a NUMBER. Declared here, beside the type and the
+ * defaults, because that is the one place a new numeric setting is added — a second list
+ * kept elsewhere is a list that goes stale. Consumed by numericSettingString below and by
+ * parseRecipeSettings, which keeps its own defensive trim: settings are edited in place
+ * (each panel spreads into setSettings), so a live-typed value never passes back through
+ * normalizeSettings. */
+export const NUMERIC_SETTING_KEYS = [
+  'batchOilGrams',
+  'superfatPercent',
+  'kohBlendPercent',
+  'waterPercentOfOils',
+  'lyeConcentrationPercent',
+  'lyeWaterRatio',
+  'naohPurityPercent',
+  'kohPurityPercent',
+  'soapConcentrationPercent',
+  'soapingTempF',
+  'preservativeDosePct',
+  'gradualWaterGrams',
+] as const;
+
+/** settingString for a numeric field: surrounding whitespace trimmed, so `' '` is the same
+ * blank as `''` for every reader. `Number(' ')` is 0, which reads as "0 g of water", "0%
+ * KOH", "0% soap concentration" — a silent wrong number rather than a blank. Free text
+ * (notes, custom names) keeps its whitespace and stays on settingString. */
+function numericSettingString(value: unknown, fallback: string): string {
+  return settingString(value, fallback).trim();
+}
+
 export function normalizeSettings(
   rawPartial: Partial<RecipeSettings> | null | undefined,
 ): RecipeSettings {
@@ -628,30 +662,30 @@ export function normalizeSettings(
     gelMode: isGelMode(partial?.gelMode) ? partial.gelMode : DEFAULT_SETTINGS.gelMode,
     batchSetByUser: resolveBatchProvenance(partial),
     splitLiquids: normalizeSplitLiquids(partial),
-    batchOilGrams: settingString(partial?.batchOilGrams, d.batchOilGrams),
-    superfatPercent: settingString(partial?.superfatPercent, d.superfatPercent),
-    kohBlendPercent: settingString(partial?.kohBlendPercent, d.kohBlendPercent),
-    waterPercentOfOils: settingString(partial?.waterPercentOfOils, d.waterPercentOfOils),
-    lyeConcentrationPercent: settingString(partial?.lyeConcentrationPercent, d.lyeConcentrationPercent),
-    lyeWaterRatio: settingString(partial?.lyeWaterRatio, d.lyeWaterRatio),
-    naohPurityPercent: settingString(partial?.naohPurityPercent, d.naohPurityPercent),
-    kohPurityPercent: settingString(partial?.kohPurityPercent, d.kohPurityPercent),
+    batchOilGrams: numericSettingString(partial?.batchOilGrams, d.batchOilGrams),
+    superfatPercent: numericSettingString(partial?.superfatPercent, d.superfatPercent),
+    kohBlendPercent: numericSettingString(partial?.kohBlendPercent, d.kohBlendPercent),
+    waterPercentOfOils: numericSettingString(partial?.waterPercentOfOils, d.waterPercentOfOils),
+    lyeConcentrationPercent: numericSettingString(partial?.lyeConcentrationPercent, d.lyeConcentrationPercent),
+    lyeWaterRatio: numericSettingString(partial?.lyeWaterRatio, d.lyeWaterRatio),
+    naohPurityPercent: numericSettingString(partial?.naohPurityPercent, d.naohPurityPercent),
+    kohPurityPercent: numericSettingString(partial?.kohPurityPercent, d.kohPurityPercent),
     batchNotes: settingString(partial?.batchNotes, d.batchNotes, MAX_NOTES_LENGTH),
     postCookSuperfatTotalPercent: normalizePostCookSuperfatTotal(partial ?? {}, postCookSuperfatOils),
     postCookSuperfatOils,
-    soapConcentrationPercent: settingString(partial?.soapConcentrationPercent, d.soapConcentrationPercent),
-    soapingTempF: settingString(partial?.soapingTempF, d.soapingTempF),
+    soapConcentrationPercent: numericSettingString(partial?.soapConcentrationPercent, d.soapConcentrationPercent),
+    soapingTempF: numericSettingString(partial?.soapingTempF, d.soapingTempF),
     // An id the table no longer resolves becomes a custom entry KEEPING the typed name —
     // the same degradation normalizeAdditiveLine applies to a stale catalogId. '' is
     // already a custom entry and passes through untouched.
     preservativeId: lsPreservativeById(rawPreservativeId) ? rawPreservativeId : '',
     preservativeCustomName: settingString(partial?.preservativeCustomName, d.preservativeCustomName),
-    preservativeDosePct: settingString(partial?.preservativeDosePct, d.preservativeDosePct),
+    preservativeDosePct: numericSettingString(partial?.preservativeDosePct, d.preservativeDosePct),
     // Mirrors resolveBatchProvenance's "explicit flag or false" half — but with no total to
     // infer from, an absent flag (every recipe saved before this field existed) must mean
     // false outright, never true. See the field's own doc for why that direction matters.
     preservativeSetByUser: partial?.preservativeSetByUser === true,
-    gradualWaterGrams: settingString(partial?.gradualWaterGrams, d.gradualWaterGrams),
+    gradualWaterGrams: numericSettingString(partial?.gradualWaterGrams, d.gradualWaterGrams),
   };
 }
 

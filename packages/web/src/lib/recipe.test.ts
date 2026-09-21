@@ -770,3 +770,65 @@ describe('row-list caps on settings-nested arrays (unbounded-import guard)', () 
     expect(s.postCookSuperfatOils[2].percent).toBe('33.4');
   });
 });
+
+describe('review fixes 2026-09-21: the post-cook superfat cap is never exceeded', () => {
+  it('rounds the capped row DOWN, so a fractional headroom cannot push the total over 100', () => {
+    // Row 2 overflows, so it is rewritten to the headroom 98.99 — which Math.round sends
+    // UP to 99.0, and the rows then sum to 100.01, above the cap this function exists to
+    // enforce. Flooring is the only direction that respects it.
+    const s = normalizeSettings({
+      postCookSuperfatOils: [
+        { oilId: 'olive-oil', percent: '1.01' },
+        { oilId: 'shea-butter', percent: '99' },
+      ],
+    });
+    const total = s.postCookSuperfatOils.reduce((sum, o) => sum + Number(o.percent), 0);
+    expect(total).toBeLessThanOrEqual(100);
+    expect(s.postCookSuperfatOils[1].percent).toBe('98.9');
+  });
+
+  it('does not eat a tenth off a headroom that is already exact at one decimal', () => {
+    // 100 − 64.4 is 35.599999999999994 in float, so flooring the scaled value lands on
+    // 35.5 and quietly loses 0.1 — on 123 of the 999 one-decimal first rows. The cap has
+    // to round the float noise away BEFORE it floors the real tenth.
+    const s = normalizeSettings({
+      postCookSuperfatOils: [
+        { oilId: 'olive-oil', percent: '64.4' },
+        { oilId: 'shea-butter', percent: '40' },
+      ],
+    });
+    expect(s.postCookSuperfatOils[1].percent).toBe('35.6');
+    const total = s.postCookSuperfatOils.reduce((sum, o) => sum + Number(o.percent), 0);
+    expect(total).toBeLessThanOrEqual(100);
+  });
+});
+
+describe('review fixes 2026-09-21: the whitespace-is-blank rule lives where settings are produced', () => {
+  it('trims every numeric setting, not just the seven the lye calc reads', () => {
+    // `Number(' ')` is 0, which read as "0 g of water", "0% KOH", "0% soap concentration".
+    // The rule was implemented downstream in parseRecipeSettings over a hand-kept list, so
+    // it covered only the fields that function parses; the rest arrived unguarded.
+    const s = normalizeSettings({
+      superfatPercent: ' ',
+      kohBlendPercent: '  ',
+      soapConcentrationPercent: '  ',
+      gradualWaterGrams: ' ',
+      preservativeDosePct: '  ',
+      soapingTempF: ' ',
+      batchOilGrams: '  ',
+    });
+    expect(s.superfatPercent).toBe('');
+    expect(s.kohBlendPercent).toBe('');
+    expect(s.soapConcentrationPercent).toBe('');
+    expect(s.gradualWaterGrams).toBe('');
+    expect(s.preservativeDosePct).toBe('');
+    expect(s.soapingTempF).toBe('');
+    expect(s.batchOilGrams).toBe('');
+  });
+
+  it('leaves free-text settings exactly as typed', () => {
+    const s = normalizeSettings({ batchNotes: '  cure 6 weeks  ', preservativeCustomName: ' My blend ' });
+    expect(s.batchNotes).toBe('  cure 6 weeks  ');
+    expect(s.preservativeCustomName).toBe(' My blend ');
+  });
+});

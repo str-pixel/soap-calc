@@ -284,3 +284,14 @@ describe('solveOilTotalForBatchTarget degenerate inputs', () => {
     expect(solveOilTotalForBatchTarget(twoLines, Number.NaN, 1000, 1400)).toBe(1000);
   });
 });
+
+describe('review fixes 2026-09-21: a percent edit on a small batch keeps its sub-gram weight', () => {
+  it('a 0.1% line on a 20 g total stores 0.02, never "0" (zero EMPTIES the line)', () => {
+    // The 0.3 g case above is covered by the one-decimal widening; below 0.05 g that rule
+    // still rounds to "0", which is the exact loss it was added to prevent. A 20 g tester
+    // batch with a 0.1% line is the reachable path (percent × batch never passes through
+    // parseInputDisplayToGrams, so its 0.1 g floor does not apply here).
+    const synced = syncPercentEdit(twoLines, 'a', '0.1', '20', true);
+    expect(synced.lines[0].weightGrams).toBe('0.02');
+  });
+});

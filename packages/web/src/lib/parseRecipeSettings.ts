@@ -1,6 +1,6 @@
 import { NEG_SUPERFAT_FLOOR, type LyeType, type WaterMode } from '@soap-calc/core';
 import { kohBlendRangeFor } from './process';
-import type { RecipeSettings } from './recipe';
+import { NUMERIC_SETTING_KEYS, type RecipeSettings } from './recipe';
 
 // Re-exported so SettingsPanel bounds the slider from the same constant the core validates.
 export { NEG_SUPERFAT_FLOOR };
@@ -96,19 +96,14 @@ function waterInput(
   };
 }
 
-const NUMERIC_SETTING_KEYS = [
-  'superfatPercent',
-  'kohBlendPercent',
-  'naohPurityPercent',
-  'kohPurityPercent',
-  'waterPercentOfOils',
-  'lyeConcentrationPercent',
-  'lyeWaterRatio',
-] as const;
-
 /** Numeric fields with surrounding whitespace trimmed, so `' '` is the same blank as `''`
  * everywhere below (Number(' ') is 0, which read as "0 g of water" and "0% KOH"). Only the
- * numeric fields: notes and names keep their whitespace. */
+ * numeric fields: notes and names keep their whitespace.
+ *
+ * normalizeSettings already trims these on the way in, so this is the guard for values
+ * edited in place afterwards — every settings panel spreads straight into setSettings, so a
+ * live-typed "  " never passes back through normalization. The key list itself is NOT a
+ * second copy: it is recipe.ts's, beside the type those keys belong to. */
 function trimNumericSettings(settings: RecipeSettings): RecipeSettings {
   const out = { ...settings };
   for (const key of NUMERIC_SETTING_KEYS) out[key] = String(settings[key] ?? '').trim();

@@ -110,9 +110,11 @@ export function formatWeightParts(
     (value > 0 && value < 10 ? Math.max(config.displayDigits, 1) : config.displayDigits);
   // A positive dose must never print as zero (the promise in this function's own test):
   // below 0.05 g the one-decimal rule still rounds to "0", so widen until a digit shows.
-  // Capped at 4 places; a caller that asked for explicit digits gets exactly those.
+  // The bound is the float-formatting limit, not a display choice: a 4-place cap still
+  // printed "0 oz" for a 0.001 g trace (3.5e-5 oz), which is the case the promise is for.
+  // A caller that asked for explicit digits gets exactly those.
   if (digits === undefined) {
-    while (value > 0 && d < 4 && Number(value.toFixed(d)) === 0) d += 1;
+    while (value > 0 && d < 20 && Number(value.toFixed(d)) === 0) d += 1;
   }
   return {
     // The app's one number rule (lib/format.ts formatGrams), not a second copy of it.

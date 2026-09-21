@@ -9,10 +9,16 @@ function parseNum(value: string): number | null {
 
 function formatGrams(n: number): string {
   const whole = Math.round(n);
+  if (whole !== 0 || n <= 0) return String(whole);
   // Whole grams are the stored basis — except where rounding would erase a real weight:
   // a 0.3 g line stores "0.3", never "0", because 0 is what EMPTIES a line (syncWeightEdit).
-  // parseInputDisplayToGrams already rounds to 0.1 g, so anything under 0.05 g arrives as 0.
-  return whole === 0 && n > 0 ? String(Math.round(n * 10) / 10) : String(whole);
+  // One significant digit rather than one DECIMAL: a typed weight does arrive pre-rounded
+  // to 0.1 g (parseInputDisplayToGrams), but a weight derived from percent × batch does
+  // not, and on a small batch it lands below 0.05 g — where a one-decimal rule writes the
+  // "0" that empties the line. At or above 0.1 g the output is unchanged (bar an exact
+  // .x5 tie, which now falls rather than rises); below it the real figure is kept instead
+  // of being rounded up, so 0.05 g stores "0.05" and no longer doubles to "0.1".
+  return String(Number(n.toPrecision(1)));
 }
 
 /** Percents are display-rounded to 0.1, so each stored percent can be off by up to
