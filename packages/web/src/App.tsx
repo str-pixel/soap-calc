@@ -231,7 +231,6 @@ export default function App() {
   useRecipeAutosave(
     process, recipeName, lines, settings, additives, scentColor,
     () => flashSaveMessage('Could not auto-save — export your recipe so you don’t lose it.'),
-    () => inputs.peekCommittedDrafts(),
   );
 
   function handlePrintBatchSheet() {

@@ -971,13 +971,36 @@ describe('a recipe we cannot read is not a recipe we lost', () => {
 });
 
 describe('autosave flush on pagehide', () => {
-  it('a weight typed but not blurred survives the flush', () => {
+  it('a weight typed but not blurred does NOT reach the saved draft', () => {
+    // The flush deliberately persists committed state only. A draft is not yet the
+    // maker's intent: "3" on the way to "350" is a 3 g line, and a half-typed TOTAL
+    // rescales every oil through syncBatchTotalEdit. The same listener fires on
+    // visibilitychange → hidden, i.e. every mobile app-switch, so resolving drafts here
+    // rewrites the recipe on a gesture that is not even a close. Nothing can tell "3
+    // meaning 3" from "3 on the way to 350", so the committed value wins and an unblurred
+    // edit is the accepted loss. e2e/recipe-ui.spec.ts pins this through a real reload.
+    vi.useFakeTimers();
+    try {
+      render(<App />);
+      const weight = screen.getByLabelText('Weight in g for Olive Oil') as HTMLInputElement;
+      const committed = weight.value;
+      fireEvent.focus(weight);
+      fireEvent.change(weight, { target: { value: '600' } });
+      act(() => { window.dispatchEvent(new Event('pagehide')); });
+      expect(loadDraft('cp')?.lines.find((l) => l.oilId === 'olive-oil')?.weightGrams).toBe(committed);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a BLURRED weight does survive the flush — committing is what makes it real', () => {
     vi.useFakeTimers();
     try {
       render(<App />);
       const weight = screen.getByLabelText('Weight in g for Olive Oil') as HTMLInputElement;
       fireEvent.focus(weight);
       fireEvent.change(weight, { target: { value: '600' } });
+      fireEvent.blur(weight);
       act(() => { window.dispatchEvent(new Event('pagehide')); });
       expect(loadDraft('cp')?.lines.find((l) => l.oilId === 'olive-oil')?.weightGrams).toBe('600');
     } finally {

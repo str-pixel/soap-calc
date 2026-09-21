@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import type { AdditiveLine, RecipeLine, RecipeSettings } from '../lib/recipe';
 import type { ProcessId } from '../lib/process';
 import type { ScentColor } from '../lib/scentColor';
-import type { SyncedRecipe } from '../lib/lineWeightSync';
 import { saveDraft, hasDraft } from '../lib/recipeStorage';
 
 const AUTOSAVE_MS = 500;
@@ -15,17 +14,11 @@ export function useRecipeAutosave(
   additives: AdditiveLine[],
   scentColor: ScentColor,
   onSaveError?: () => void,
-  flushDrafts?: () => SyncedRecipe,
 ) {
   // Keep the latest callback in a ref so autosave binds to the timer without the
   // effect re-running (and re-scheduling the debounce) on every render.
   const onSaveErrorRef = useRef(onSaveError);
   onSaveErrorRef.current = onSaveError;
-
-  // The inputs hook's draft flush (commitDrafts over the live refs). Held in a ref for the
-  // same reason as onSaveError: the hide listener is registered once.
-  const flushDraftsRef = useRef(flushDrafts);
-  flushDraftsRef.current = flushDrafts;
 
   // Mirror every save input in a ref (same pattern as useRecipeEditor's linesRef/batchRef)
   // so the pagehide/visibilitychange listener below — registered once, not re-bound per
@@ -103,33 +96,23 @@ export function useRecipeAutosave(
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
-      // A field still focused holds its edit as a DRAFT (committed on blur/Enter), and a
-      // tab close or mobile background-kill does not reliably blur first. RESOLVE the
-      // drafts now and save what they resolve to — resolve, not commit: this also runs on
-      // visibilitychange → hidden, a mobile app-switch, so committing here would rescale
-      // the recipe behind the maker's back (useRecipeInputs.peekCommittedDrafts).
-      const synced = flushDraftsRef.current?.();
-      const draftsChanged =
-        synced !== undefined &&
-        (synced.lines !== linesRef.current ||
-          synced.batchOilGrams !== settingsRef.current.batchOilGrams ||
-          // Provenance too: a re-typed identical total only flips batchSetByUser, and that
-          // flip is still an edit this flush is the last chance to persist.
-          synced.batchSetByUser !== settingsRef.current.batchSetByUser);
-      // Fall back to the REFS, not to `synced`, when nothing changed: lastSavedRef below
-      // stores what we saved and isDirty() compares it by identity, so a freshly spread
-      // settings object for a no-op flush would leave the workspace permanently dirty and
-      // re-save byte-identical state on every later hide.
-      const lines = synced && draftsChanged ? synced.lines : linesRef.current;
-      const settings =
-        synced && draftsChanged
-          ? { ...settingsRef.current, batchOilGrams: synced.batchOilGrams, batchSetByUser: synced.batchSetByUser }
-          : settingsRef.current;
+      // COMMITTED state only. A field still focused holds its edit as a DRAFT, and it is
+      // tempting to resolve those drafts here so a tab closed mid-edit keeps the edit —
+      // but a draft is not yet the maker's intent. "3" on the way to "350" resolves to a
+      // 3 g line, and through syncBatchTotalEdit a half-typed TOTAL rescales every oil in
+      // the recipe. This listener also fires on visibilitychange → hidden, i.e. every
+      // mobile app-switch, so that would rewrite the recipe behind them on a gesture that
+      // is not even a close. There is no way to tell "3 meaning 3" from "3 on the way to
+      // 350", so the safe reading is the committed one: e2e/recipe-ui.spec.ts pins that a
+      // never-committed value is not what comes back after a reload. The cost is an
+      // unblurred edit lost on a hard close, which is the lesser loss by far.
+      const lines = linesRef.current;
+      const settings = settingsRef.current;
       // Dirty check instead of timer-presence: a committed edit whose debounce effect
       // hasn't run yet has no timer but still needs saving. Also re-persist when the
       // slot is EMPTY (external deletion/eviction): this tab may hold the only copy,
       // and writing into an empty slot cannot clobber another tab's newer draft.
-      if (!draftsChanged && !isDirty() && hasDraft(processRef.current)) return;
+      if (!isDirty() && hasDraft(processRef.current)) return;
       const saved = saveDraft(
         processRef.current,
         recipeNameRef.current,

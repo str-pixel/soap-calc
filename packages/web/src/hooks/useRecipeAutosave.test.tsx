@@ -140,19 +140,20 @@ describe('useRecipeAutosave', () => {
     vi.useRealTimers();
   });
 
-  it('commits the in-flight field drafts on pagehide before saving (a tab closed mid-edit keeps the edit)', () => {
+  it('saves the COMMITTED state on pagehide, never an in-flight draft', () => {
+    // The hook takes no draft channel at all: a draft is not yet the maker's intent, and
+    // resolving one here would persist "3" typed on the way to "350" — or, through the
+    // total, rescale every oil line. This listener also fires on every mobile app-switch.
+    // e2e/recipe-ui.spec.ts ('autosave persists the committed weight, not a mid-typed
+    // value') pins the same contract end to end, through a real reload.
     const lines = createStarterLines();
-    const edited = lines.map((l, i) => (i === 0 ? { ...l, weightGrams: '600' } : l));
-    const flushDrafts = vi.fn(() => ({ lines: edited, batchOilGrams: '1150', batchSetByUser: true }));
     renderHook(() =>
-      useRecipeAutosave('cp', 'r', lines, DEFAULT_SETTINGS, [] as AdditiveLine[], SCENT, undefined, flushDrafts),
+      useRecipeAutosave('cp', 'r', lines, DEFAULT_SETTINGS, [] as AdditiveLine[], SCENT),
     );
     window.dispatchEvent(new Event('pagehide'));
-    expect(flushDrafts).toHaveBeenCalledTimes(1);
     const draft = loadDraft('cp');
-    expect(draft?.lines[0].weightGrams).toBe('600');
-    expect(draft?.settings.batchOilGrams).toBe('1150');
-    expect(draft?.settings.batchSetByUser).toBe(true);
+    expect(draft?.lines[0].weightGrams).toBe(lines[0].weightGrams);
+    expect(draft?.settings.batchOilGrams).toBe(DEFAULT_SETTINGS.batchOilGrams);
   });
 
   it('removes its pagehide/visibilitychange listeners on unmount', () => {
@@ -248,18 +249,12 @@ describe('review fixes 2026-09-21: a hide-flush leaves the workspace clean', () 
   it('does not re-save on the next hide when nothing changed since the last one', () => {
     vi.useFakeTimers();
     const lines = createStarterLines();
-    // The flush hook resolves drafts WITHOUT mutating state (useRecipeInputs
-    // peekCommittedDrafts), so with no drafts pending it hands back the very refs it was
-    // given. Storing a freshly SPREAD settings object after such a save left lastSavedRef
-    // permanently unequal to settingsRef, so isDirty() could never read false again and
-    // every later hide re-wrote byte-identical state.
-    const peek = vi.fn(() => ({
-      lines,
-      batchOilGrams: DEFAULT_SETTINGS.batchOilGrams,
-      batchSetByUser: DEFAULT_SETTINGS.batchSetByUser,
-    }));
+    // The flush stores what it saved into lastSavedRef, and isDirty() compares that by
+    // identity. Storing a freshly SPREAD settings object after a save left it permanently
+    // unequal to settingsRef, so the workspace could never read clean again and every
+    // later hide re-wrote byte-identical state.
     const { rerender } = renderHook(
-      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, [], SCENT, undefined, peek),
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, [], SCENT),
       { initialProps: { name: 'Draft' } },
     );
     rerender({ name: 'my recipe' });

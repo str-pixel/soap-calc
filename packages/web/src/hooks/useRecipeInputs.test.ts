@@ -193,29 +193,7 @@ test('handleApplySuggestedOilGrams still applies a rounded oil total (mold-sizer
   expect(synced.batchSetByUser).toBe(true);
 });
 
-test('the autosave peek resolves in-flight drafts for the SAVE without touching editor state', () => {
-  // The hide-flush runs on visibilitychange → hidden, which is a mobile app-switch, not
-  // only a teardown. Committing there mutates the recipe behind the maker's back: a
-  // half-typed total ("1" on the way to 1000) rescales every line to a 1 g batch and
-  // pushes an undo entry. The saved payload must still carry the resolved draft, so the
-  // flush needs the value WITHOUT the side effects.
-  const clearAllDrafts = vi.fn();
-  const applyEdit = vi.fn();
-  const deps = makeDeps({
-    drafts: { 'batch-total': '1' },
-    clearAllDrafts,
-    editor: { ...makeDeps().editor, applyEdit },
-  });
-
-  const inputs = useRecipeInputs(deps);
-  const synced = inputs.peekCommittedDrafts();
-
-  expect(synced.batchOilGrams).toBe('1');
-  expect(clearAllDrafts).not.toHaveBeenCalled();
-  expect(applyEdit).not.toHaveBeenCalled();
-});
-
-test('the export flush still commits drafts into editor state (that one IS a user action)', () => {
+test('the export flush commits drafts into editor state — export IS a user action, a tab hide is not', () => {
   const clearAllDrafts = vi.fn();
   const applyEdit = vi.fn();
   const deps = makeDeps({
