@@ -55,6 +55,7 @@ const ALL_CODES = [
   'ls_split_liquid_not_dilution',
   'ls_superfat_high',
   'ls_water_outside_envelope',
+  'lye_excess_bar',
   'magnesium_salt_scum',
   'no_superfat_margin',
   'oatmeal_false_trace',

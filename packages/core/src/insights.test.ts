@@ -25,10 +25,11 @@ const has = (input: FormulationAnalysisInput, code: string) =>
   analyzeFormulation(input).some((i) => i.code === code);
 
 describe('lye-excess warning (negative superfat)', () => {
-  it('fires for a negative superfat even under CP, not just LS', () => {
-    // A caustic recipe from any caller must still surface the neutralization guidance,
-    // not only the LS UI path.
-    expect(has({ ...base, superfatPercent: -2, process: 'cp' }, 'ls_lye_excess')).toBe(true);
+  it('fires for a negative superfat under CP — as the BAR rule, whose remedy is a bar remedy', () => {
+    // A caustic recipe from any caller must still surface guidance; which guidance depends
+    // on the process, because acidifying does not lower a bar's pH (CP:795).
+    expect(has({ ...base, superfatPercent: -2, process: 'cp' }, 'lye_excess_bar')).toBe(true);
+    expect(has({ ...base, superfatPercent: -2, process: 'cp' }, 'ls_lye_excess')).toBe(false);
   });
 
   it('fires for a negative-superfat liquid soap', () => {
@@ -38,6 +39,8 @@ describe('lye-excess warning (negative superfat)', () => {
   it('does not fire at zero or positive superfat', () => {
     expect(has({ ...base, superfatPercent: 0 }, 'ls_lye_excess')).toBe(false);
     expect(has({ ...base, superfatPercent: 5 }, 'ls_lye_excess')).toBe(false);
+    expect(has({ ...base, superfatPercent: 0 }, 'lye_excess_bar')).toBe(false);
+    expect(has({ ...base, superfatPercent: 5 }, 'lye_excess_bar')).toBe(false);
   });
 });
 
@@ -1089,10 +1092,10 @@ describe('rule registry consistency', () => {
   // emitted code comes from whatever check() returns — so a copy-paste that updates one and
   // not the other would ship a mislabeled insight past the golden. This suite guards that.
 
-  it('declares 54 unique codes', () => {
+  it('declares 55 unique codes', () => {
     const declared = INSIGHT_RULES.map((r) => r.code);
-    expect(declared).toHaveLength(54);
-    expect(new Set(declared).size).toBe(54);
+    expect(declared).toHaveLength(55);
+    expect(new Set(declared).size).toBe(55);
   });
 
   const cleansingProps = (over: Partial<Record<string, number>> = {}) => ({
@@ -1238,7 +1241,8 @@ describe('rule registry consistency', () => {
       process: 'hp',
     },
     hp_vessel_too_small: { hpVesselMultiple: 1.2, process: 'hp' },
-    ls_lye_excess: { superfatPercent: -2 },
+    ls_lye_excess: { superfatPercent: -2, process: 'ls' },
+    lye_excess_bar: { superfatPercent: -2, lyeGrams: 140, process: 'cp' },
     ls_water_outside_envelope: { waterEnvelope: [25, 60], waterGrams: 200, process: 'ls' },
     // Fragrance & colorants
     fragrance_over_usual_range: {
@@ -1721,13 +1725,14 @@ describe('review fixes 2026-09-19: insight gating and copy', () => {
     expect(codesFor({ ...base, process: 'hp', additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }] })).toContain('hp_thick_phase_suppressant');
   });
 
-  it('no_superfat_margin is the 0% case only; a lye excess is ls_lye_excess alone (LS:1161, LS:1195)', () => {
+  it('no_superfat_margin is the 0% case only; a lye excess has its own per-process rule (LS:1161, LS:1195)', () => {
     for (const process of ['cp', 'hp'] as const) {
       const codes = codesFor({ ...base, process, superfatPercent: -3 });
-      expect(codes).toContain('ls_lye_excess');
+      expect(codes).toContain('lye_excess_bar');
       expect(codes).not.toContain('no_superfat_margin');
       expect(codesFor({ ...base, process, superfatPercent: 0 })).toContain('no_superfat_margin');
     }
+    expect(codesFor({ ...base, process: 'ls', superfatPercent: -3 })).toContain('ls_lye_excess');
   });
 
   it('LS sugar ceiling is the catalog range top, 6% (LS:1069)', () => {
@@ -1781,5 +1786,116 @@ describe('review fixes 2026-09-19: insight gating and copy', () => {
     // No stage known → the catalog's LS default (lye water) reading.
     const unknown = messageFor({ ...base, process: 'ls', additiveEntries: [{ catalogId: 'salt', name: 'Table salt (NaCl)' }] }, 'ls_salt_thickening');
     expect(unknown).toMatch(/fluid/i);
+  });
+});
+
+describe('review fixes 2026-09-21: keyword gaps found re-reviewing the branch', () => {
+  it('a hyphenated "Polysorbate-80" line satisfies the emulsifier prompt (LS:1274)', () => {
+    const ls = { ...base, process: 'ls' as const, postCookSuperfatPercent: 2 };
+    const fires = (name: string) =>
+      has({ ...ls, additiveEntries: [{ catalogId: '', name }] }, 'ls_pcsf_emulsifier');
+    // The hyphenated spelling is as common as the spaced one, and tightening the keywords
+    // to require the literal "80" dropped it: no keyword has a word boundary inside
+    // "Polysorbate-80" before the digits.
+    expect(fires('Polysorbate-80')).toBe(false);
+    expect(fires('Tween-80')).toBe(false);
+    // Still not satisfied by the fragrance emulsifier.
+    expect(fires('Polysorbate-20')).toBe(true);
+  });
+
+  it('only rosemary oleoresin stands down the DOS rule — a paprika or annatto oleoresin is a colorant', () => {
+    const pufa = {
+      ...base,
+      process: 'cp' as const,
+      fattyAcids: { linoleic: 40, oleic: 40, palmitic: 20 },
+      fattyAcidCoveragePercent: 100,
+    };
+    const fires = (name: string, catalogId = '') =>
+      has({ ...pufa, additiveEntries: [{ catalogId, name }] }, 'dos_risk_no_antioxidant');
+    // Both ship in the colorant catalog; neither protects anything against oxidation.
+    expect(fires('Paprika oleoresin', 'paprika')).toBe(true);
+    expect(fires('Annatto oleoresin', 'annatto')).toBe(true);
+    // The real antioxidant still stands the rule down.
+    expect(fires('Rosemary oleoresin extract')).toBe(false);
+    expect(fires('ROE (rosemary oleoresin)', 'roe')).toBe(false);
+  });
+});
+
+describe('review fixes 2026-09-21: a lye excess reads differently in a bar than in liquid soap', () => {
+  it('gives a NaOH bar the bar hazard and the bar remedy, not the LS neutralization (CP:3158, CP:3167, CP:795)', () => {
+    for (const process of ['cp', 'hp'] as const) {
+      const out = analyzeFormulation({ ...base, process, superfatPercent: -3 });
+      const codes = out.map((i) => i.code);
+      // The LS rule's remedy is the post-DILUTION acidification of liquid soap (LS:1195).
+      // CP:795 is explicit that acidifying a bar does not lower its pH — it frees fatty
+      // acids instead — so that guidance must not reach a bar at all.
+      expect(codes).not.toContain('ls_lye_excess');
+      const bar = out.find((i) => i.code === 'lye_excess_bar');
+      // A lye-heavy bar burns skin (CP:3158); info level understates it.
+      expect(bar?.level).toBe('warning');
+      // Not the LS remedy: no post-dilution acidification target...
+      expect(bar?.message).not.toMatch(/pH 9/);
+      expect(bar?.message).not.toMatch(/neutralize the finished soap/i);
+      // ...and it says outright that acid is not the fix here (CP:795).
+      expect(bar?.message).toMatch(/does not lower its pH/i);
+      // The sourced bar remedy instead (CP:3167).
+      expect(bar?.message).toMatch(/rebatch/i);
+    }
+  });
+
+  it('leaves the intentional liquid-soap lye excess exactly as it was (LS:670, LS:1195)', () => {
+    const out = analyzeFormulation({ ...base, process: 'ls', superfatPercent: -3 });
+    const codes = out.map((i) => i.code);
+    expect(codes).toContain('ls_lye_excess');
+    expect(codes).not.toContain('lye_excess_bar');
+    expect(out.find((i) => i.code === 'ls_lye_excess')?.message).toMatch(/citric acid/i);
+  });
+});
+
+describe('review fixes 2026-09-21: the magnesium filter and its rule judge a line the same way', () => {
+  const codesFor = (input: FormulationAnalysisInput) => analyzeFormulation(input).map((i) => i.code);
+
+  it('keeps the salt coaching for a CATALOG salt line whose name carries a magnesium word', () => {
+    // catalogId is the authoritative identity — the panel does not let a catalog row be
+    // renamed (showNameField = !entry), so only an imported file can make name and id
+    // disagree. The filter matched the raw NAME with no fragrance guard while
+    // magnesium_salt_scum applies one, so a line the scum rule deliberately passed over was
+    // still stripped from the salt advisories and got no advice from either side.
+    for (const [process, code] of [
+      ['ls', 'ls_salt_thickening'],
+      ['hp', 'hp_thick_phase_suppressant'],
+    ] as const) {
+      const codes = codesFor({
+        ...base, process,
+        additiveEntries: [{ catalogId: 'salt', name: 'Dead Sea salt fragrance oil' }],
+      });
+      expect(codes).not.toContain('magnesium_salt_scum');
+      expect(codes).toContain(code);
+    }
+  });
+
+  it('changes nothing for custom lines — the two predicates only ever diverge on catalogId', () => {
+    // matchingAdditiveEntries applies the same fragrance guard on its own name path, so a
+    // custom fragrance line is silent either way. This pins that the fix is narrow.
+    for (const process of ['ls', 'hp'] as const) {
+      const codes = codesFor({
+        ...base, process,
+        additiveEntries: [{ catalogId: '', name: 'Dead Sea Breeze fragrance oil' }],
+      });
+      expect(codes).not.toContain('magnesium_salt_scum');
+      expect(codes).not.toContain('ls_salt_thickening');
+      expect(codes).not.toContain('hp_thick_phase_suppressant');
+    }
+  });
+
+  it('still refuses both advisories to a real magnesium salt (CP:10623-10626)', () => {
+    for (const process of ['ls', 'hp'] as const) {
+      const codes = codesFor({
+        ...base, process, additiveEntries: [{ catalogId: '', name: 'Epsom salt' }],
+      });
+      expect(codes).toContain('magnesium_salt_scum');
+      expect(codes).not.toContain('ls_salt_thickening');
+      expect(codes).not.toContain('hp_thick_phase_suppressant');
+    }
   });
 });

@@ -43,14 +43,14 @@
     "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
    },
    {
-    "level": "info",
-    "code": "superfat_out_of_band",
-    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+    "level": "warning",
+    "code": "lye_excess_bar",
+    "message": "This sets more lye than the oils can saponify, so free alkali stays in the finished bar — it can burn, redden or itch skin, and damage eyes. Soda ash that keeps returning after it is rinsed off is the usual sign; zap- or pH-test before any use. A very small excess can cure out as sodium carbonate and wash away, while a large one needs a rebatch with added oil. Acid does not fix it: adding citric acid to a bar does not lower its pH, it just frees fatty acids."
    },
    {
     "level": "info",
-    "code": "ls_lye_excess",
-    "message": "Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target."
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
    }
   ]
  },
@@ -63,14 +63,14 @@
     "message": "Oil batch over 500 g — smaller test batches are easier to troubleshoot if something goes wrong."
    },
    {
-    "level": "info",
-    "code": "superfat_out_of_band",
-    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
+    "level": "warning",
+    "code": "lye_excess_bar",
+    "message": "This sets more lye than the oils can saponify, so free alkali stays in the finished bar — it can burn, redden or itch skin, and damage eyes. Soda ash that keeps returning after it is rinsed off is the usual sign; zap- or pH-test before any use. A very small excess can cure out as sodium carbonate and wash away, while a large one needs a rebatch with added oil. Acid does not fix it: adding citric acid to a bar does not lower its pH, it just frees fatty acids."
    },
    {
     "level": "info",
-    "code": "ls_lye_excess",
-    "message": "Running a lye excess — neutralize the finished soap to pH 9–10.5 with citric acid dissolved 1:4 in hot water, added gradually and confirmed with a pH test. Never acidify a soap that is already on target."
+    "code": "superfat_out_of_band",
+    "message": "Superfat is outside the usual 3–30% working range (about 5% is common) — intentional for some bars, but double-check it is deliberate."
    }
   ]
  },

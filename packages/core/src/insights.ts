@@ -13,7 +13,6 @@ import {
   additiveNameMatches,
   matchingAdditiveEntries,
   recipeOilMatches,
-  wordBoundaryMatch,
   type NamedCatalogEntry,
   type NamedOilEntry,
 } from './keyword-match.js';
@@ -21,13 +20,20 @@ import { LS_ZONES } from './ls-method.js';
 
 /** Magnesium-bearing salts: warned against outright (magnesium_salt_scum, CP:10623-10626),
  * so every "salt" advisory filters them out first — a maker must never read "do not use"
- * and "add it gradually" about the same line. */
+ * and "add it gradually" about the same line.
+ *
+ * Filtered with `additiveNameMatches`, the SAME predicate magnesium_salt_scum fires on, so
+ * the two halves of that invariant are exact complements. A bare name match here instead
+ * left a gap rather than an overlap: the fragrance guard could stand the scum rule down
+ * while this filter still stripped the line, and a CATALOG salt row whose name merely
+ * carried a magnesium word (only an imported file can disagree with its catalogId — the
+ * panel will not rename a catalog row) then got no advice from either side. */
 const MAGNESIUM_SALT_KEYWORDS = ['epsom', 'magnesium', 'dead sea'] as const;
 function withoutMagnesiumSalts(
   entries: NamedCatalogEntry[] | undefined,
 ): NamedCatalogEntry[] | undefined {
   return entries?.filter(
-    (entry) => !MAGNESIUM_SALT_KEYWORDS.some((keyword) => wordBoundaryMatch(entry.name, keyword)),
+    (entry) => !MAGNESIUM_SALT_KEYWORDS.some((keyword) => additiveNameMatches([entry], keyword)),
   );
 }
 
@@ -358,6 +364,31 @@ export const INSIGHT_RULES: InsightRule[] = [
             '0% superfat sets the lye to exactly match the oils, leaving no unsaponified-oil buffer — ' +
             'normal variation in oil SAP values or a small scale error then leaves free lye, which can ' +
             'make the bar harsh or caustic. Most bar recipes keep a few percent superfat.',
+        };
+      }
+      return null;
+    },
+  },
+  {
+    code: 'lye_excess_bar',
+    processes: ['cp', 'hp'],
+    // The other half of the caustic-bar guard above: no_superfat_margin covers exactly 0%
+    // (no buffer), this covers below 0% (an actual excess). Free alkali stays in the
+    // finished bar — burning, redness, itching, scarring, and eye damage (CP:3158) — so it
+    // is a WARNING, not the info-level note liquid soap gets for the same arithmetic.
+    // Remedy is CP:3167's, graded by size: a minor excess cures out as sodium carbonate,
+    // a large one needs a rebatch with added oil. Acidifying is NOT offered (CP:795).
+    check: (input) => {
+      if (input.lyeGrams > 0 && input.superfatPercent < 0) {
+        return {
+          level: 'warning',
+          code: 'lye_excess_bar',
+          message:
+            'This sets more lye than the oils can saponify, so free alkali stays in the finished bar — ' +
+            'it can burn, redden or itch skin, and damage eyes. Soda ash that keeps returning after it is ' +
+            'rinsed off is the usual sign; zap- or pH-test before any use. A very small excess can cure out ' +
+            'as sodium carbonate and wash away, while a large one needs a rebatch with added oil. Acid does ' +
+            'not fix it: adding citric acid to a bar does not lower its pH, it just frees fatty acids.',
         };
       }
       return null;
@@ -866,7 +897,10 @@ export const INSIGHT_RULES: InsightRule[] = [
         // The antioxidant is "Rosemary Oleoresin Extract (ROE)" (LS:1018, HP:4871, CP:5566);
         // the herb and its essential oil are fragrance/botanicals (CP:9941) and protect nothing.
         additiveMatches(input.additiveEntries, 'roe', 'roe') ||
-        additiveNameMatches(input.additiveEntries, 'oleoresin') ||
+        // 'rosemary oleoresin', not bare 'oleoresin': paprika and annatto oleoresin are
+        // COLORANTS (colorant-catalog.ts) and protect nothing — a bare keyword let one of
+        // them stand the rule down on a recipe with no antioxidant at all.
+        additiveNameMatches(input.additiveEntries, 'rosemary oleoresin') ||
         additiveNameMatches(input.additiveEntries, 'rosemary extract') ||
         additiveMatches(input.additiveEntries, 'edta', 'edta');
       if (protected_) return null;
@@ -1186,7 +1220,8 @@ export const INSIGHT_RULES: InsightRule[] = [
     // A post-cook superfat needs an emulsifier in liquid soap: the added oil is never
     // saponified, and without one it floats off instead of staying suspended. Fires only
     // while no polysorbate 80 line is in the recipe; five keyword checks cover the common
-    // custom-name spellings (polysorbate 80 / poly 80 / poly-80 / tween 80 / tween80) since
+    // custom-name spellings (polysorbate 80 / polysorbate-80 / poly 80 / poly-80 /
+    // tween 80 / tween-80 / tween80) since
     // wordBoundaryMatch is a literal \b<keyword>\b match and no single keyword covers all
     // of them — 'Tween80' and 'Poly-80' in particular have no word boundary before the
     // digits, so the space-delimited keywords above miss them. Every keyword requires the
@@ -1198,9 +1233,11 @@ export const INSIGHT_RULES: InsightRule[] = [
       // Polysorbate 80 is the oil emulsifier; polysorbate 20 is for fragrance (LS:1274).
       if (
         additiveMatches(input.additiveEntries, 'polysorbate-80', 'polysorbate 80') ||
+        additiveNameMatches(input.additiveEntries, 'polysorbate-80') ||
         additiveNameMatches(input.additiveEntries, 'poly 80') ||
         additiveNameMatches(input.additiveEntries, 'poly-80') ||
         additiveNameMatches(input.additiveEntries, 'tween 80') ||
+        additiveNameMatches(input.additiveEntries, 'tween-80') ||
         additiveNameMatches(input.additiveEntries, 'tween80')
       ) {
         return null;
@@ -1300,9 +1337,16 @@ export const INSIGHT_RULES: InsightRule[] = [
   },
   {
     code: 'ls_lye_excess',
-    // Any negative superfat leaves free alkali in the finished soap, whatever the process
-    // or lye type — warn on the actual excess, not just the LS flag, so a caustic recipe
-    // from any caller (not only the LS UI path) still gets the neutralization guidance.
+    processes: ['ls'],
+    // The INTENTIONAL liquid-soap lye excess: run more alkali than the oils need for
+    // clarity and shelf life, then acidify after dilution (LS:670 calls this "fundamentally
+    // different" from an accidental lye-heavy soap; LS:1195 puts the neutralization after
+    // the dilution process).
+    //
+    // LS-gated, though a negative superfat is arithmetically the same in any process,
+    // because the REMEDY is not: CP:795 is explicit that adding an acid to a bar — in the
+    // lye solution, at trace, or in a rebatch — does not lower its pH, it frees fatty acids
+    // instead. A bar at a lye excess is a lye-heavy bar and gets lye_excess_bar below.
     check: (input) => {
       if (input.superfatPercent < 0) {
         return {
