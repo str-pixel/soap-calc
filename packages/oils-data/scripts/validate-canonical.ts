@@ -17,7 +17,7 @@ import { classifyProfileIodineDeviations } from '../src/profile-iodine-deviation
 import { classifyExternalReferenceDeviations } from '../src/external-reference-deviations.js';
 import { IODINE_CORRECTIONS } from '../src/iodine-corrections.js';
 import { PROFILE_BACKFILL } from '../src/profile-backfill.js';
-import { OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
+import { buildSlugByEmittedId, OIL_ID_OVERRIDES } from '../src/oil-id-overrides.js';
 import { FATTY_ACID_SAP_FLOOR, PROFILE_TOO_INCOMPLETE_TO_USE } from '../src/normalize.js';
 import { defaultInventoryPath, inciInInventory, loadCosingInventory } from '../src/cosing-inventory.js';
 
@@ -25,6 +25,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataPath = join(__dirname, '../data/canonical-oils.json');
 const litePath = join(__dirname, '../data/canonical-oils-lite.json');
 const supplementalInciPath = join(__dirname, '../sources/supplemental-inci.json');
+const excludedOilsPath = join(__dirname, '../sources/excluded-oils.json');
 
 /** Golden SAP values for high-risk oils (legacy catalog). */
 const GOLDEN_SAP_KOH: Record<string, number> = {
@@ -99,6 +100,15 @@ function main() {
       if (oil.ins !== expectedIns) {
         errors.push(`${oil.id}: ins ${oil.ins} != round(sapMgKohPerGram − iodine) = ${expectedIns}`);
       }
+    }
+
+    // INS is DERIVED or ABSENT — never inherited. Without an iodine value the index cannot
+    // be computed, and a legacy figure carried over was computed from the LEGACY SAP, which
+    // resolution may have moved: the check above would skip it, so it would ship unverified.
+    // calculateRecipeIndexes already ignores any oil missing either value, so an inherited
+    // ins is dead data whose only future is to be trusted by mistake.
+    if (oil.ins !== undefined && oil.iodine === undefined && oil.category !== 'tar') {
+      errors.push(`${oil.id}: ships an ins with no iodine — INS must be derived from the shipped SAP and iodine, or omitted`);
     }
 
     const fnwlSource = oil.sources.find((s) => s.source === 'fnwl');
@@ -331,8 +341,13 @@ function main() {
 
   // Iodine corrections are the single source of truth (build applies, validate asserts).
   // Keyed by BUILD SLUG in both places: the build looks up `baseSlug` before the id override
-  // is applied, so the validator maps each emitted id back to its slug the same way.
-  const slugByEmittedId = new Map(Object.entries(OIL_ID_OVERRIDES).map(([slug, id]) => [id, slug]));
+  // is applied, so the validator maps each emitted id back to its slug the same way — minus
+  // the dedup-merge entries, whose key is an excluded oil and whose value is a DIFFERENT oil
+  // built under its own slug (see buildSlugByEmittedId).
+  const excludedOilIds: string[] = existsSync(excludedOilsPath)
+    ? ((JSON.parse(readFileSync(excludedOilsPath, 'utf8')) as { oilIds?: string[] }).oilIds ?? [])
+    : [];
+  const slugByEmittedId = buildSlugByEmittedId(excludedOilIds);
   for (const oil of db.oils) {
     const corr = IODINE_CORRECTIONS[slugByEmittedId.get(oil.id) ?? oil.id];
     if (corr && oil.iodine !== corr.iodine) {

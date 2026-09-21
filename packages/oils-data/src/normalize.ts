@@ -10,6 +10,20 @@ export function normalizeOilName(name: string): string {
     .trim();
 }
 
+/** Case and punctuation only — normalizeOilName WITHOUT its descriptor-word stripping.
+ * For comparing a name we looked up against a chart row's RAW name: inside one normalized
+ * group those descriptors (organic, refined, …) are the only thing telling the rows apart,
+ * so stripping them there would make every row look like an exact match. */
+export function normalizeNamePunctuation(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/['']/g, '')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function slugify(name: string): string {
   return normalizeOilName(name).replace(/\s+/g, '-');
 }

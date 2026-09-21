@@ -416,8 +416,14 @@ function main() {
     // Once resolution moved the SAP (45 FNWL oils) the shipped INS no longer matched the
     // shipped SAP and iodine (52 of 127 oils; tucuma read 175 where its own numbers give
     // 225). Tars keep their placeholder: no triglyceride, and the web excludes them.
-    if (iodine !== undefined && category !== 'tar') {
-      ins = Math.round(sapKoh * 1000 - iodine);
+    if (category !== 'tar') {
+      // Derived or ABSENT — never inherited. With no iodine the index cannot be computed,
+      // and the legacy catalog's figure was computed from ITS SAP, which resolution may
+      // have moved; carrying it over would ship a number that contradicts the SAP beside
+      // it, and the validator's consistency check skips exactly those rows. Dropping it
+      // costs nothing downstream: calculateRecipeIndexes already ignores any oil missing
+      // either value. validate-canonical asserts this both ways.
+      ins = iodine !== undefined ? Math.round(sapKoh * 1000 - iodine) : undefined;
     }
 
     // The emitted public id may be overridden (e.g. a mislabeled slug); internal lookups above
