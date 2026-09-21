@@ -243,3 +243,37 @@ describe('externally-deleted draft (third wave)', () => {
     vi.useRealTimers();
   });
 });
+
+describe('review fixes 2026-09-21: a hide-flush leaves the workspace clean', () => {
+  it('does not re-save on the next hide when nothing changed since the last one', () => {
+    vi.useFakeTimers();
+    const lines = createStarterLines();
+    // The flush hook resolves drafts WITHOUT mutating state (useRecipeInputs
+    // peekCommittedDrafts), so with no drafts pending it hands back the very refs it was
+    // given. Storing a freshly SPREAD settings object after such a save left lastSavedRef
+    // permanently unequal to settingsRef, so isDirty() could never read false again and
+    // every later hide re-wrote byte-identical state.
+    const peek = vi.fn(() => ({
+      lines,
+      batchOilGrams: DEFAULT_SETTINGS.batchOilGrams,
+      batchSetByUser: DEFAULT_SETTINGS.batchSetByUser,
+    }));
+    const { rerender } = renderHook(
+      ({ name }) => useRecipeAutosave('cp', name, lines, DEFAULT_SETTINGS, [], SCENT, undefined, peek),
+      { initialProps: { name: 'Draft' } },
+    );
+    rerender({ name: 'my recipe' });
+
+    Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true });
+    document.dispatchEvent(new Event('visibilitychange')); // dirty: this one must save
+    expect(loadDraft('cp')?.name).toBe('my recipe');
+
+    const setItemSpy = vi.spyOn(window.localStorage, 'setItem');
+    document.dispatchEvent(new Event('visibilitychange')); // nothing changed: must be a no-op
+    expect(setItemSpy.mock.calls.length).toBe(0);
+
+    setItemSpy.mockRestore();
+    Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true });
+    vi.useRealTimers();
+  });
+});

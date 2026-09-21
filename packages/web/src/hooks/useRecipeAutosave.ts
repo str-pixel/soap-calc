@@ -104,17 +104,27 @@ export function useRecipeAutosave(
         timerRef.current = null;
       }
       // A field still focused holds its edit as a DRAFT (committed on blur/Enter), and a
-      // tab close or mobile background-kill does not reliably blur first. Commit the drafts
-      // now, exactly as export does (useRecipeInputs.handleExportCommitted), and save what
-      // they resolve to.
+      // tab close or mobile background-kill does not reliably blur first. RESOLVE the
+      // drafts now and save what they resolve to — resolve, not commit: this also runs on
+      // visibilitychange → hidden, a mobile app-switch, so committing here would rescale
+      // the recipe behind the maker's back (useRecipeInputs.peekCommittedDrafts).
       const synced = flushDraftsRef.current?.();
-      const lines = synced ? synced.lines : linesRef.current;
-      const settings = synced
-        ? { ...settingsRef.current, batchOilGrams: synced.batchOilGrams, batchSetByUser: synced.batchSetByUser }
-        : settingsRef.current;
       const draftsChanged =
         synced !== undefined &&
-        (synced.lines !== linesRef.current || synced.batchOilGrams !== settingsRef.current.batchOilGrams);
+        (synced.lines !== linesRef.current ||
+          synced.batchOilGrams !== settingsRef.current.batchOilGrams ||
+          // Provenance too: a re-typed identical total only flips batchSetByUser, and that
+          // flip is still an edit this flush is the last chance to persist.
+          synced.batchSetByUser !== settingsRef.current.batchSetByUser);
+      // Fall back to the REFS, not to `synced`, when nothing changed: lastSavedRef below
+      // stores what we saved and isDirty() compares it by identity, so a freshly spread
+      // settings object for a no-op flush would leave the workspace permanently dirty and
+      // re-save byte-identical state on every later hide.
+      const lines = synced && draftsChanged ? synced.lines : linesRef.current;
+      const settings =
+        synced && draftsChanged
+          ? { ...settingsRef.current, batchOilGrams: synced.batchOilGrams, batchSetByUser: synced.batchSetByUser }
+          : settingsRef.current;
       // Dirty check instead of timer-presence: a committed edit whose debounce effect
       // hasn't run yet has no timer but still needs saving. Also re-persist when the
       // slot is EMPTY (external deletion/eviction): this tab may hold the only copy,

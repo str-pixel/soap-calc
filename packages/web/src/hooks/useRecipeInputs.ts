@@ -1,4 +1,4 @@
-import { commitDrafts } from '../lib/commitDrafts';
+import { commitDrafts, previewRecipeState } from '../lib/commitDrafts';
 import {
   addRecipeLine,
   resyncFromWeights,
@@ -59,6 +59,7 @@ export type RecipeInputs = {
   batchWeightInputId: string;
   updateLine: (key: string, patch: Partial<RecipeLine>) => void;
   flushCommittedDrafts: () => SyncedRecipe;
+  peekCommittedDrafts: () => SyncedRecipe;
   discardDrafts: () => void;
   handleExportCommitted: () => void;
   handleNewRecipe: () => void;
@@ -129,6 +130,21 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
   function redo() {
     discardDrafts();
     editorRedo();
+  }
+
+  /** What flushCommittedDrafts WOULD produce, without committing it. The autosave
+   * hide-flush needs the resolved value to save, but runs on visibilitychange → hidden —
+   * a mobile app-switch, not only a teardown — where clearing the drafts and applying the
+   * edit would rescale the recipe behind the maker's back. Save the resolved value, leave
+   * the half-typed field exactly as they left it. */
+  function peekCommittedDrafts(): SyncedRecipe {
+    return previewRecipeState(
+      linesRef.current,
+      batchRef.current,
+      drafts,
+      weightUnit,
+      batchSetByUserRef.current,
+    );
   }
 
   function flushCommittedDrafts(): SyncedRecipe {
@@ -320,7 +336,7 @@ export function useRecipeInputs(deps: UseRecipeInputsDeps): RecipeInputs {
     applySyncedUpdate((prev) => resyncFromWeights(prev));
   }
 
-  return { weightInputId, percentInputId, batchInputId, batchWeightInputId, updateLine, flushCommittedDrafts,
+  return { weightInputId, percentInputId, batchInputId, batchWeightInputId, updateLine, flushCommittedDrafts, peekCommittedDrafts,
     discardDrafts, handleExportCommitted, handleNewRecipe, handleApplySuggestedOilGrams,
     commitWeightInput, commitPercentInput, commitBatchInput, handleWeightChange,
     handleBatchChange, handleBatchWeightChange, commitBatchWeightInput, setWeightUnit, addLine, removeLine, matchTotalToWeights,
