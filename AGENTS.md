@@ -18,7 +18,10 @@ Deploy: Railway static build (`railway.json`).
 ## Standing rules
 
 - **Minimal changes.** Smallest patch that solves the problem. No drive-by refactors.
-- **Run tests before finishing.** `npm test` must pass.
+- **Run the gate before finishing.** `npm run gate` must pass — it is the one command
+  that runs what CI runs. `npm test` is NOT the gate: it excludes the Playwright e2e
+  suite, which CI runs as a separate job, so a change can pass `npm test` locally and
+  still fail CI. Say which one you ran when you report a result.
 - **No secrets in code or commits.** `.env` is gitignored.
 - **Do not auto-commit or auto-push** unless explicitly asked.
 - **Local archives stay outside the repo.** Third-party reference code and research books live at `/Users/str/soap-calc-archive/` (not committed). Production code must not depend on them.
@@ -71,7 +74,10 @@ npm run validate:oils
 npm run dev:web      # http://localhost:5173
 npm run build:web
 
-# All tests (runs typecheck -> validate:oils -> unit tests)
+# The gate: everything CI runs (unit + builds + e2e). Use this before pushing.
+npm run gate
+
+# Unit only (typecheck -> validate:oils -> unit tests). NOT the gate: no e2e.
 npm test
 
 # Type-check only (tsc --noEmit across all packages)

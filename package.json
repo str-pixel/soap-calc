@@ -11,7 +11,8 @@
     "dev:web": "npm run dev -w @soap-calc/web",
     "validate:oils": "npm run validate -w @soap-calc/oils-data",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run typecheck && npm run validate:oils && npm run test --workspaces --if-present"
+    "test": "npm run typecheck && npm run validate:oils && npm run test --workspaces --if-present",
+    "gate": "npm test && npm run build:oils && npm run build:web && npm run test:e2e -w @soap-calc/web"
   },
   "engines": {
     "node": ">=20"
