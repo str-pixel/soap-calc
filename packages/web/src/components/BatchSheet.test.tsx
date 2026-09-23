@@ -14,6 +14,11 @@ import { buildBatchSheetData, type BatchSheetData } from '../lib/batchSheet';
 import { computePostCookSuperfat } from '../lib/calculateAdditives';
 import { calculateRecipe } from '../lib/calculateRecipe';
 import { type RecipeSettings, createStarterLines, DEFAULT_SETTINGS } from '../lib/recipe';
+import { postCookSuperfatProvenance } from '../lib/recipeSummary';
+
+/** Derived from the one emitter, never retyped: this phrase used to be duplicated across
+ * four test files and an e2e spec, and a reword left stale copies behind twice. */
+const PROVENANCE = postCookSuperfatProvenance(true).replace(/^ · /, '');
 
 afterEach(cleanup);
 
@@ -357,7 +362,7 @@ test('subtract + non-negative main superfat: notes the reserve comes from the oi
 
   render(<BatchSheet data={data} />);
 
-  expect(screen.getByText(/weighed separately; the oils above are already trimmed/)).toBeTruthy();
+  expect(screen.getByText((t) => t.includes(PROVENANCE))).toBeTruthy();
   expect(screen.getByText('Total superfat')).toBeTruthy();
 });
 

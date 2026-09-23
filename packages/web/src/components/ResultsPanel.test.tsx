@@ -15,6 +15,11 @@ import { useRecipeViewModel } from '../hooks/useRecipeViewModel';
 import { createEmptyScentColor, normalizeScentColor } from '../lib/scentColor';
 import { applyScentColorCompliance, computeScentColorGrams } from '../lib/computeScentColor';
 import { formatWeight } from '../lib/weightUnits';
+import { postCookSuperfatProvenance } from '../lib/recipeSummary';
+
+/** Derived from the one emitter, never retyped: this phrase used to be duplicated across
+ * four test files and an e2e spec, and a reword left stale copies behind twice. */
+const PROVENANCE = postCookSuperfatProvenance(true).replace(/^ · /, '');
 
 /** A dial reading renders its unit in a child span ("444" + "g"), so an element's OWN
  * text nodes no longer spell the whole figure and getByText's default matcher misses it.
@@ -144,7 +149,7 @@ test('subtract: the PCSF row carries the shared provenance phrase + batch weight
     />,
   );
   // The grid row and the Full recipe line quote ONE provenance phrase — no third vocabulary.
-  expect(screen.getAllByText(/weighed separately; the oils above are already trimmed/).length).toBeGreaterThanOrEqual(2);
+  expect(screen.getAllByText((t) => t.includes(PROVENANCE)).length).toBeGreaterThanOrEqual(2);
   // The panel renders the vm's batch weight, not (full displayTotals batch + PCSF grams).
   expect(figure('1234 g')).toBeTruthy();
 });
@@ -177,7 +182,7 @@ test('subtract + non-negative main superfat: provenance note and Total superfat 
       batchWeightWithExtras={1234}
     />,
   );
-  expect(screen.getAllByText(/weighed separately; the oils above are already trimmed/).length).toBeGreaterThanOrEqual(1);
+  expect(screen.getAllByText((t) => t.includes(PROVENANCE)).length).toBeGreaterThanOrEqual(1);
   expect(screen.getByText('Total superfat')).toBeTruthy();
   // The stamped subtract figure COMPOUNDS (core deliveredSuperfatPercent): 2% then a 5%
   // reserve is 100×(1−0.98×0.95) = 6.9%, not the 7.0% plain addition printed before.
@@ -206,13 +211,13 @@ test('lists the recipe oils at their cook weight when a subtract reserve is appl
   expect(screen.getByText(/950 g · 100%/)).toBeTruthy();
   // The phrase appears in the results-grid row AND the Full recipe line (the neighbouring
   // post-cook test expects ≥ 2 for the same reason), so getAllByText.
-  expect(screen.getAllByText(/weighed separately; the oils above are already trimmed/).length).toBeGreaterThanOrEqual(1);
+  expect(screen.getAllByText((t) => t.includes(PROVENANCE)).length).toBeGreaterThanOrEqual(1);
   // The Total batch slices must sum to the total: trimmed oils, not the formulation's 1000 g.
   expect(screen.getByText(/oils 950 g/)).toBeTruthy();
   // "Add in this order" must name the same total the oil lines above it add up to.
   expect(screen.getAllByText(/950 g total/).length).toBeGreaterThanOrEqual(1);
   // and the grid's Oil weight row is the cook weight too — the sheet's identically
-  // labelled row prints it, and the PCSF row says the oils above are already trimmed.
+  // labelled row prints it, and the PCSF row says the oils above are trimmed.
   expect(figure('950 g')).toBeTruthy();
 });
 

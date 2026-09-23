@@ -313,8 +313,17 @@ export function useRecipeViewModel({
   // The water-bearing base batch: trimmed oils + the lye/water sized to them. The PCSF oil is
   // an extra in both methods (computeExtrasGrams), so subtract's total is
   // trimmed oils + trimmed lye/water + PCSF — numerically the target oil weight + lye + water.
-  // The PCSF oil is deliberately excluded from this dose base in both methods: it goes in
-  // after the cook, append never counted it, and subtract now agrees.
+  // The PCSF oil is deliberately excluded from this dose base in both methods, and the
+  // source treats it the same way: the HP method has the reserve "included as an additive"
+  // after the cook "rather than including it in the oils" (HP:5573), and says the PCSF does
+  // not go into the soap calculator (HP:5707). Its two printed recipes leave the PCSF oil
+  // out of the stated Total Batch Weight — but they leave the sodium lactate and yogurt out
+  // too, so what they actually show is that ADDITIVES sit outside that weight, which is the
+  // category HP:5573 puts the reserve in. They are NOT evidence for the subtract branch's
+  // composition: both are append-style, with the lye sized to the untrimmed oils (the 32 oz
+  // table's 130.8 g NaOH is 907.2 g x this repo's blend SAP at its stated 2% superfat, not
+  // the 861.8 g a 5% reserve would leave). Nor do the tables agree on additives in general
+  // — the 16 oz one folds its lye-water sugar into the total and the 32 oz one does not.
   const baseBatchGrams = pcsfReserveApplied
     ? cookOilGrams + (result?.lyeWeightGrams ?? 0) + (result?.waterWeightGrams ?? 0)
     : displayTotals?.batchWeightGrams ?? fullResult?.totalBatchWeightGrams ?? 0;

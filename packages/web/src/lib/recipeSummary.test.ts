@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest';
 import { computedScent } from '../testing/scentFixtures';
 import { applyScentColorCompliance, computeScentColorGrams } from './computeScentColor';
-import { addOrderStepPlan, buildAddOrderSteps, buildFullRecipe, postCookSuperfatLineDetail } from './recipeSummary';
+import { readFileSync } from 'node:fs';
+import { addOrderStepPlan, buildAddOrderSteps, buildFullRecipe, postCookSuperfatLineDetail, postCookSuperfatProvenance } from './recipeSummary';
 import { normalizeScentColor } from './scentColor';
 
 /** Flatten the sectioned manifest for ordering assertions that span sections. */
@@ -391,7 +392,9 @@ test('a reserved PCSF section line says it is weighed separately and the oils ab
   const pcsf = sections.find((s) => s.heading === 'Post-cook superfat')!;
   // The PCSF oil is weighed on its own, and the manifest's oils above it already carry the
   // cook-factor trim that makes room for it — so oils + this line = the target oil weight.
-  expect(pcsf.items[0].detail).toBe('20 g · 5% of oil · weighed separately; the oils above are already trimmed to make room');
+  // The ONE golden copy of this phrase. Every other test derives it from
+  // postCookSuperfatProvenance; reword it here and in recipeSummary.ts, nowhere else.
+  expect(pcsf.items[0].detail).toBe('20 g · 5% of oil · weighed separately; oils above trimmed to make room');
 });
 
 test('the after-cook section heading is process-aware — LS says After dilution', () => {
@@ -426,7 +429,7 @@ test('a solvent in-lye liquid (glycerin) lists BEFORE the alkali — it is what 
 
 test('a PCSF line with no applied state at all fails safe — it never claims a reserve', () => {
   // Only a type-bypassing caller can get here; if one does, "extra weight" is the harmless
-  // reading and "weighed separately; the oils above are already trimmed" the harmful one.
+  // reading and "weighed separately; oils above trimmed" the harmful one.
   expect(postCookSuperfatLineDetail({ grams: 20, percentOfOil: 5 }, 'g', undefined as never)).toBe(
     '20 g · 5% of oil',
   );
@@ -890,4 +893,15 @@ test('an ingredient with no weight is not in the batch, so it is not in Contains
     additives: [],
   });
   expect(sections.find((s) => s.heading === 'Allergens')).toBeUndefined();
+});
+
+test('the e2e spec still quotes the live provenance phrase', () => {
+  // This phrase renders in the browser, so an e2e spec asserts it — and a spec cannot
+  // import it without pulling the app's module graph into Playwright. That leaves exactly
+  // one hand-copied instance, which has gone stale on every reword so far (the last one
+  // reached CI). Reading the spec here turns that from a CI failure minutes later into a
+  // unit failure seconds later, naming the file to fix.
+  const spec = readFileSync(new URL('../../e2e/exploratory.spec.ts', import.meta.url), 'utf8');
+  const phrase = postCookSuperfatProvenance(true).replace(/^ · /, '');
+  expect(spec).toContain(phrase);
 });

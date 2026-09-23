@@ -59,7 +59,7 @@ type ResultsPanelProps = {
   totalOilGrams?: number;
   /** useRecipeViewModel.cookFactor. REQUIRED: defaulted to 1, a caller that omits it beside
    * an applied subtract reserve prints untrimmed oil weights directly above the row saying
-   * the oils above are already trimmed. Append mode passes 1. */
+   * the oils above are trimmed. Append mode passes 1. */
   cookFactor: number;
 };
 
@@ -334,9 +334,9 @@ export const ResultsPanel = memo(function ResultsPanel({
             <dt>Oil weight</dt>
             <dd>
               {/* The oils that go into the pot — the same cook weight the printed sheet's
-                  identically labelled row quotes, so the PCSF row's "the oils above are
-                  already trimmed" reads true on screen too. The editor's Total oil field
-                  stays on the formulation target. */}
+                  identically labelled row quotes, so the PCSF row's "oils above trimmed to
+                  make room" reads true on screen too. The editor's Total oil field stays on
+                  the formulation target. */}
               <Weight grams={recipeOilWeightGrams * cookFactor} unit={weightUnit} />
               {excludedOilWeightGrams > 0 && (
                 <span className="results-excluded">

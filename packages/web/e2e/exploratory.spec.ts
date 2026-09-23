@@ -519,7 +519,9 @@ test.describe('liquid soap', () => {
     await expect(
       page.locator('.panel--results .results-grid dt').filter({ hasText: /Post-cook superfat/ }).first(),
     ).toBeVisible();
-    await expect(page.locator('.panel--results')).toContainText(/weighed separately; the oils above are already trimmed/);
+    await expect(page.locator('.panel--results')).toContainText(/weighed separately; oils above trimmed to make room/)
+    // ^ the one copy of this phrase outside src/. recipeSummary.test.ts asserts this
+    // file still quotes the live string, so a reword fails `npm test`, not just CI.;
   });
 
   test('post-cook superfat supports more than one oil', async ({ page }) => {
