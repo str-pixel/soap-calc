@@ -22,6 +22,15 @@ Deploy: Railway static build (`railway.json`).
   that runs what CI runs. `npm test` is NOT the gate: it excludes the Playwright e2e
   suite, which CI runs as a separate job, so a change can pass `npm test` locally and
   still fail CI. Say which one you ran when you report a result.
+- **A check must be shown to fail.** When you add anything that verifies something — a
+  test, a gate, a guard script — break the thing it watches and confirm it goes red before
+  you trust it. Prefer a sensitivity control in the same file over a one-off manual
+  perturbation (see `gate-integrity.test.ts`, `published-example-crosscheck.test.ts`). A
+  check that cannot fail is indistinguishable from one that is working, and reads the same
+  in a diff. Two traps this repo has actually hit: an assertion of ABSENCE
+  (`not.toContain`, `queryBy…` → null) proves nothing unless the same test also proves the
+  subject was produced; and a measurement taken INSIDE a command cannot observe work that
+  happens outside it (a pre-tool hook, a separate CI job).
 - **No secrets in code or commits.** `.env` is gitignored.
 - **Do not auto-commit or auto-push** unless explicitly asked.
 - **Local archives stay outside the repo.** Third-party reference code and research books live at `/Users/str/soap-calc-archive/` (not committed). Production code must not depend on them.

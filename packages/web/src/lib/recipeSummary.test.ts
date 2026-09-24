@@ -904,4 +904,8 @@ test('the e2e spec still quotes the live provenance phrase', () => {
   const spec = readFileSync(new URL('../../e2e/exploratory.spec.ts', import.meta.url), 'utf8');
   const phrase = postCookSuperfatProvenance(true).replace(/^ · /, '');
   expect(spec).toContain(phrase);
+  // Sensitivity control: the assertion above is only meaningful if it discriminates. A
+  // reworded phrase must NOT be found — otherwise a check that always passes would look
+  // exactly like a check that is working, which is the failure this guard exists to stop.
+  expect(spec).not.toContain(phrase.replace('weighed separately', 'weighed apart'));
 });

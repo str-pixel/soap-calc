@@ -45,12 +45,29 @@ describe('a published worked example reproduces under the shipped SAP values', (
   /** The published post-cook reserve, as a share of the oil weight. */
   const RESERVE_SHARE = 0.05;
 
-  const naohFor = (grams: number) =>
-    BLEND.reduce((sum, [id, fraction]) => sum + fraction * sapNaohFor(id), 0) * grams * (1 - SUPERFAT);
+  /** Alkali for `grams` of the blend, optionally with one oil's SAP scaled — the scale
+   * factor exists for the sensitivity control below, nothing else. */
+  const naohFor = (grams: number, drift?: { id: string; factor: number }) =>
+    BLEND.reduce(
+      (sum, [id, fraction]) =>
+        sum + fraction * sapNaohFor(id) * (drift && drift.id === id ? drift.factor : 1),
+      0,
+    ) *
+    grams *
+    (1 - SUPERFAT);
 
   it('matches the printed alkali weight to a tenth of a gram', () => {
     // Printed to 0.1 g, so that is the tolerance it can be held to.
     expect(naohFor(OIL_GRAMS)).toBeCloseTo(PRINTED_NAOH_GRAMS, 1);
+  });
+
+  it('would NOTICE a drifting SAP value (sensitivity control)', () => {
+    // A cross-check is only worth its runtime if it can still fail. Proven here rather
+    // than by a one-off manual perturbation: move a single oil 2% and the agreement must
+    // break. Without this, a tolerance loosened later — or a blend that stopped feeding
+    // the calculation at all — would leave the test passing and checking nothing.
+    const drifted = naohFor(OIL_GRAMS, { id: 'palm-oil', factor: 1.02 });
+    expect(Math.abs(drifted - PRINTED_NAOH_GRAMS)).toBeGreaterThan(0.5);
   });
 
   it('is sized to the FULL oils, so it is an append-style example', () => {
