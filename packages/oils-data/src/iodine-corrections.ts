@@ -19,6 +19,10 @@ export const IODINE_CORRECTIONS: Record<string, { iodine: number; note: string }
     iodine: 88,
     note: 'Corrected: legacy iodine (97) sits above both published ranges for hazelnut oil — Codex CXS 210-1999 (rev. 2019) Table 2 gives 81–95 and the AOCS-attributed band gives 83–90 — while the oil\'s own profile derives ~88, inside both. Set to 88.',
   },
+  'tamanu-oil-kamani': {
+    iodine: 87,
+    note: 'Corrected: legacy iodine (111) sits above the AOCS-attributed band (82–98) and above every published figure found; the measured profile (PMC 12189715, applied in profile-backfill.ts) derives ~87, inside the band. Set to 87.',
+  },
   'murumuru-butter': {
     iodine: 13,
     note: 'Corrected: legacy iodine (25) is high for a lauric butter; published murumuru IV is ~10–15, matching the profile-derived ~14. Set to ~13.',

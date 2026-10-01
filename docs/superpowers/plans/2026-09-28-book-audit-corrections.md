@@ -58,10 +58,14 @@ Facts the review corrected in the record: the HP calculator page (p236) shows a 
 
 `npm run gate` (unit, builds, browser e2e) exit 0 on 2026-10-01: core 838, oils-data 124, web 1904, e2e 124. Three earlier gate runs failed on timeouts only, each matching a system sleep in the power log.
 
-## Open items
+## Open items — resolved 2026-10-01
 
-- The LS citric-acid note ("it will not bring a finished soap's pH down") matches LS:1216 but sits beside the Neutralize panel's pH 9–10.5 target.
-- `fragrance.ts` ships the phrase "the bar recipes in the cold-process text", a source reference in user-facing copy.
-- The sorbitol note's "for a paler result" is carried over from sugar; the CP text says sorbitol is less likely to discolour (CP:10507-10508).
-- Tamanu iodine (111) is above every source found and above its own profile (99.6); the profile needs a cited source first.
-- `docs/` plans still carry the old strings.
+- **LS citric-acid note.** Now says what the after-cook route does: it removes excess lye and the solution settles at soap's natural pH 9–10.5 (LS:1216, LS:1232), instead of "it will not bring a finished soap's pH down". The lye-solution half, where the calculator replaces the alkali, is unchanged.
+- **Fragrance range clause.** "the bar recipes in the cold-process text run 3–6%" is now "typical bar recipes run 3–6% of oil weight" (and its "past" form) — behaviour, no source named in copy. The figures are unchanged. The essential-oil rows' per-oil "why" strings still say "the cold-process text"; left for a decision, since they attribute a specific quoted rate.
+- **Sorbitol notes.** "for a paler result" (carried over from sugar) replaced with "less likely than sugar to darken in a hot solution" (CP:10507-10508).
+- **Tamanu.** Profile replaced through the backfill mechanism with the measured GC table in Fratianni et al. 2025, Antioxidants 14(6):661, Table 1 (PMC 12189715 — the same paper and table the repo already uses for borage): oleic 38.9, linoleic 30.3, palmitic 16.1, stearic 14.4, linolenic 0.3 after normalisation. The legacy profile's linoleic 38 sat above every published figure found (16–30%) and matched an uncited web table. Iodine corrected 111 → 87, the profile-derived value, inside the AOCS-attributed band (82–98); INS recomputes to 108; SAP 195 kept (profile-derived 193). Stearic varies widely between sources (6–35%); 14 is the measured value. Two other sources were paywalled and are not relied on.
+- **docs/.** The 2026-09-08 fragrance plan now carries a superseded-in-part note pointing here; its quoted strings are left as the record of that build.
+
+Still open: pecan and mango-seed iodine (warn tier, sources too mixed to assert a value); the essential-oil "why" strings above.
+
+Gate after these changes: `npm run gate` exit 0 on 2026-10-01 — core 840, oils-data 125, web 1904, e2e 124.

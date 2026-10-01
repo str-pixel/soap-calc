@@ -1033,3 +1033,27 @@ describe('milk in liquid soap: ruled out after the cook, withheld elsewhere', ()
     expect(catalogEntriesForProcess('ls').filter(isMilk).map((e) => e.id)).toEqual([]);
   });
 });
+
+describe('open items resolved 2026-10-01', () => {
+  it('the LS citric-acid note says what the acid does after the cook — removes excess lye — and not that pH stays put', () => {
+    const ls = effectiveCatalogEntry(catalogEntryById('citric-acid')!, 'ls');
+    // The note exists and keeps its lye-solution half.
+    expect(ls.note).toMatch(/lye solution/);
+    // After the cook: excess lye is neutralised and the solution settles at soap's own pH
+    // (LS:1216, LS:1232; the Neutralize panel's own 9–10.5 target).
+    expect(ls.note).toMatch(/excess lye/);
+    expect(ls.note).toMatch(/9–10\.5/);
+    expect(ls.note).not.toMatch(/nothing at this dose will/);
+  });
+
+  it('the sorbitol notes do not promise a paler result for moving it off the lye water — sorbitol is the sugar that darkens least', () => {
+    const base = catalogEntryById('sorbitol')!;
+    for (const process of ['cp', 'hp'] as const) {
+      const note = effectiveCatalogEntry(base, process).note!;
+      expect(note).toMatch(/dissolve it in the lye water/i);
+      // CP:10507-10508: sorbitol "is less likely to experience discoloration due to heat".
+      expect(note).toMatch(/less likely than sugar to darken/i);
+      expect(note).not.toMatch(/paler result/);
+    }
+  });
+});

@@ -41,3 +41,14 @@ describe('hazelnut iodine answers to two published ranges (book audit 2026-09-29
     expect(oil!.iodine!).toBeLessThanOrEqual(band!.max);
   });
 });
+
+describe('tamanu iodine answers to its published band (open item resolved 2026-10-01)', () => {
+  it('sits inside the external reference band', () => {
+    const oil = db.oils.find((o) => o.id === 'tamanu-oil-kamani');
+    expect(oil?.iodine).toBeTypeOf('number');
+    const band = refs['tamanu-oil-kamani']?.iodine;
+    expect(band).toBeDefined();
+    expect(oil!.iodine!).toBeGreaterThanOrEqual(band!.min);
+    expect(oil!.iodine!).toBeLessThanOrEqual(band!.max);
+  });
+});

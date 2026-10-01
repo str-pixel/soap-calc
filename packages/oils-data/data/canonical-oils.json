@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-29T09:02:47.551Z",
+  "generatedAt": "2026-10-01T07:10:21.755Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -5949,14 +5949,14 @@
       "sapKoh": 0.195,
       "sapNaoh": 0.13903743315508021,
       "sapMgKohPerGram": 195,
-      "iodine": 111,
-      "ins": 84,
+      "iodine": 87,
+      "ins": 108,
       "fattyAcids": {
-        "oleic": 34,
-        "stearic": 13,
-        "linoleic": 38,
-        "palmitic": 12,
-        "linolenic": 1
+        "oleic": 38.9,
+        "linoleic": 30.3,
+        "palmitic": 16.1,
+        "stearic": 14.4,
+        "linolenic": 0.3
       },
       "propertiesAvailable": true,
       "sources": [
@@ -5965,6 +5965,11 @@
           "sapKoh": 0.208,
           "sapNaoh": 0.14830659536541888,
           "notes": "Imported from soap_oils.json (legacy calculator catalog)"
+        },
+        {
+          "source": "literature",
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12189715/",
+          "notes": "Fatty-acid profile: Calophyllum inophyllum (tamanu) — GC table, PMC 12189715 (Fratianni et al. 2025, Antioxidants 14(6):661, Table 1: palmitic 15.75, stearic 14.08, oleic 38.13, linoleic 29.77, linolenic 0.25; sums 97.98, normalized). The same paper and table supply borage above. Legacy profile (oleic 34 / linoleic 38 / stearic 13 / palmitic 12) carried a linoleic share above every published figure found (16–30%) and matched an uncited web table; its derived iodine (99.6) sat above the AOCS-attributed band (82–98). The measured profile derives ~87, inside the band; iodine is corrected to it in iodine-corrections.ts. SAP 195 kept (profile-derived 193, within gate). Property shift: hardness +5, conditioning −3 (under the guard threshold). Stearic varies widely by source (6–35%); 14 is the measured value."
         },
         {
           "source": "fnwl",
@@ -5998,6 +6003,10 @@
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Calophyllum Inophyllum (Tamanu) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
+        },
+        {
+          "source": "manual",
+          "notes": "Corrected: legacy iodine (111) sits above the AOCS-attributed band (82–98) and above every published figure found; the measured profile (PMC 12189715, applied in profile-backfill.ts) derives ~87, inside the band. Set to 87."
         }
       ],
       "primarySource": "fnwl",

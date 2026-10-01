@@ -179,11 +179,11 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     stages: ['lye', 'oils', 'trace'],
     hazards: ['can tunnel/overheat'],
     processOverrides: {
-      hp: { typicalLow: 1, typicalHigh: 5, stages: ['lye', 'oils', 'trace', 'after_cook'], note: 'A sugar alcohol, dosed and timed like table sugar: dissolve it in the lye water before the lye goes in, move it to the oils or to trace for a paler result, or stir it in after the cook. It dissolves readily.' },
+      hp: { typicalLow: 1, typicalHigh: 5, stages: ['lye', 'oils', 'trace', 'after_cook'], note: 'A sugar alcohol, dosed and timed like table sugar: dissolve it in the lye water before the lye goes in, move it to the oils or to trace, or stir it in after the cook. It dissolves readily and is less likely than sugar to darken in a hot solution.' },
       ls: { typicalLow: 1, typicalHigh: 6 },
     },
     note:
-      'A sugar alcohol, dosed and timed like table sugar: dissolve it in the lye water before the lye goes in, or move it to the oils or to trace for a paler result. It dissolves readily.',
+      'A sugar alcohol, dosed and timed like table sugar: dissolve it in the lye water before the lye goes in, or move it to the oils or to trace. It dissolves readily and is less likely than sugar to darken in a hot solution.',
   },
   {
     // LS sanctions the lye solution, where the citrate forms (LS:3037).
@@ -225,7 +225,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // "wider than CP/HP" claim with it, matched nothing in the source — the LS figure
       // is the same 1–2% the base holds, stated here so the LS voice is explicit rather
       // than inherited by accident.
-      ls: { typicalLow: 1, typicalHigh: 2, stages: ['lye', 'after_cook'], note: 'Goes into the lye solution, where the alkali turns it into citrate — the citrate is the chelator, not the acid. It consumes some of that alkali on the way and the calculator has already replaced it, so the superfat you asked for is the one you get. Added after the cook it answers a different problem: alkali left unreacted in a batch that came out lye-heavy. There the calculator deliberately does NOT replace what it consumes, because consuming it is the entire point. Either way it will not bring a finished soap\'s pH down — nothing at this dose will.' },
+      ls: { typicalLow: 1, typicalHigh: 2, stages: ['lye', 'after_cook'], note: 'Goes into the lye solution, where the alkali turns it into citrate — the citrate is the chelator, not the acid. It consumes some of that alkali on the way and the calculator has already replaced it, so the superfat you asked for is the one you get. Added after the cook it answers a different problem: alkali left unreacted in a batch that came out lye-heavy. There the calculator deliberately does NOT replace what it consumes, because consuming it is the entire point. Either way it is not a way to lower a soap\'s own pH: after the cook it removes excess lye, and the solution settles at soap\'s natural 9–10.5.' },
     },
     lyeNeutralization: {
       naohPerGram: 3 * CITRIC_MOL_PER_GRAM * NAOH_MOLAR_MASS,

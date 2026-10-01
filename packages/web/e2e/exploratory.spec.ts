@@ -1123,7 +1123,7 @@ test.describe('the essential-oil catalog', () => {
     // Past the usual range, whatever the oil, the row says so in the basis the maker types in.
     await page.getByLabel(/Essential oil for/).first().selectOption('lavender');
     await page.getByLabel(/dose, % of oil weight/).first().fill('8');
-    await expect(panel).toContainText(/8% of oil weight is past the 3–6% of oil weight the cold-process text's bar recipes run to/);
-    await expect(notes).toContainText(/Lavender is dosed past the 3–6% of oil weight the cold-process text's bar recipes run to/);
+    await expect(panel).toContainText(/8% of oil weight is past the 3–6% of oil weight typical bar recipes run to/);
+    await expect(notes).toContainText(/Lavender is dosed past the 3–6% of oil weight typical bar recipes run to/);
   });
 });
