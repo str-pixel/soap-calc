@@ -62,7 +62,7 @@ describe('the carrier oil is extra unsaponified oil — a superfat shift', () =>
 describe('stage: whole-batter colour into the oils; a portion at the design stage; LS after dilution', () => {
   it.each([
     ['cp', false, 'oils'], ['cp', true, 'trace'],           // CP:9396-9404
-    ['hp', false, 'oils'], ['hp', true, 'after_cook'],      // HP:11331-11338
+    ['hp', false, 'oils'], ['hp', true, 'after_cook'],      // HP:11331-11338; after the cook HP:10649-10651
     ['ls', false, 'after_cook'], ['ls', true, 'after_cook'], // LS:13262
   ] as const)('%s hasPortion=%s → %s', (process, hasPortion, stage) => {
     expect(colorantStage(process, hasPortion)).toBe(stage);

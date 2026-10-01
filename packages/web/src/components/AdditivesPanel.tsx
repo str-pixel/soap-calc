@@ -90,8 +90,9 @@ const ADDITIVE_STAGE_NOTES: Record<AdditiveStage, string> = {
  * LIQUID SOAP DROPS "ON TOP". It is a bar-soap stage — you decorate the surface of a
  * loaf — and a bottle has no surface to decorate. The reference rules out the additives
  * the stage exists for ("dried herbs, dried flowers, sprinkles… simply shouldn't be used
- * in liquid soap", LS:3067), and every "layer on top" in that text is unsaponified fat
- * separating out: a defect to fix, not a stage to choose. */
+ * in liquid soap", LS:3067), and every "layer on top" in that text is a defect to fix —
+ * undissolved soap that needs more water, fat separating out, or surplus stearic acid after
+ * a neutralization (LS:3563, LS:3568, LS:1244) — not a stage to choose. */
 function offeredStagesForProcess(process: ProcessId): AdditiveStage[] {
   // One table, in core (PROCESS_STAGES) — the manifest and the catalog tests read the
   // same one. A test pins it against processOffers(p, 'afterCookStage').
@@ -103,7 +104,10 @@ function offeredStagesForProcess(process: ProcessId): AdditiveStage[] {
 const FATTY_ACID_DOSE: Record<ProcessId, string> = {
   cp: 'no more than 0.5–1% of oils as a trace accelerant; more can seize.',
   hp: 'typically 5–8% of oils for a fluid cook.',
-  ls: 'typically 5–10% of oils for a fluid no-paste cook.',
+  // Lauric or myristic ONLY: the no-paste chapter doses those two (LS:2574-2581). The same
+  // source's stearic figure, 3–8%, is a thickening rate from its neutralization chapter
+  // (LS:1246), so stearic gets no fluid-cook dose here.
+  ls: 'lauric or myristic typically at 5–10% of oils for a fluid no-paste cook.',
 };
 
 /** The stage seg's cell text. after_cook shows its process-aware label whole ("After
@@ -264,27 +268,35 @@ export const AdditivesPanel = memo(function AdditivesPanel({
           The free fatty acids were removed from this catalog (they saponify — see
           ADDITIVE_CATALOG's finished-soap comment); this is where every process finds them
           now. One sentence, one per-process dose: a fluid HP cook (5–8%), a no-paste LS
-          cook (5–10%), and CP's far lower trace-accelerant dose (0.5–1%, CP:10784-10790 —
+          cook (5–10%, lauric or myristic only), and CP's far lower trace-accelerant dose (0.5–1%, CP:10784-10790 —
           more can seize). */}
       <p className="results-hint">
         Free fatty acids (stearic, lauric, myristic) saponify — dose them as oils in the oils
         list, {FATTY_ACID_DOSE[process]}
       </p>
       {process === 'cp' && (
-        // The waxes that are oils too (CP:9179), and the liquids that belong to the other control.
+        // The waxes that are oils too, and the liquids that belong to the other control. Only
+        // beeswax has a sourced rate (CP:9179); candelilla is in the oils list with none.
         <p className="results-hint">
-          Beeswax and candelilla are oils too, at 1–2%. Milk, juice, coffee, beer and purées
+          Beeswax is an oil too, at 1–2%; candelilla and other waxes are entered as oils as
+          well. Milk, juice, coffee, beer and purées
           are liquids — enter them under Split liquid, frozen into the lye water or blended in
           at trace. Colorants have no fixed dose: colour the soap, not the lather.
         </p>
       )}
       {process === 'hp' && (
-        // The HP additive moment is after the cook (HP:9478-9481, 11122-11131): a hot paste
-        // browns milk sugars and drives off scent.
+        // After the cook, each for its own sourced reason: milk and yogurt because heat browns
+        // their sugars (HP:9478-9482, 11122-11126); fragrance because saponification is complete
+        // and the lye no longer reacts with it (HP:10244-10247, 8319-8320); portion colours
+        // because that is when the soap is divided (HP:10649-10651) — one colour for the whole
+        // batch goes into the oils at the start instead (HP:11331-11338). No text says a hot
+        // paste drives scent off, and the cold-process text rejects the flash-point and
+        // boiling-point versions of that idea for both bar processes (CP:9844-9866).
         <p className="results-hint">
-          Milk, yogurt, colorants and fragrance go in after the cook, warmed to at least room
-          temperature — the hot paste browns milk sugars and drives off scent. Milk as a
-          liquid goes under Split liquid.
+          Milk, yogurt, fragrance and portion colours go in after the cook, warmed to at least
+          room temperature — the hot paste browns milk sugars, and once the lye is spent it
+          cannot react with the fragrance. A single colour for the whole batch goes in with
+          the oils. Milk as a liquid goes under Split liquid.
         </p>
       )}
       {process === 'ls' && (

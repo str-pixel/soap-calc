@@ -12,8 +12,8 @@ import {
  *
  * "Resolution rule (one function, new, in packages/web/src/lib/): a record present → record
  * arm; else plan arm. "Present" follows parseGradualWaterRecordGrams's documented contract
- * exactly: non-blank and ≥ 0 — zero is a record (the pot before any water at all is Gradual's
- * own starting entry, LS:1531). A 0 g record therefore takes the record arm: the batch that
+ * exactly: non-blank and ≥ 0 — zero is a record (the pot before any water at all is where
+ * this app starts one — its convention; LS:1531 starts from the covering water). A 0 g record therefore takes the record arm: the batch that
  * exists is the undiluted paste, and every figure — including the dose basis — describes it.
  * The sheet's record rows print whatever record the rule reads; they can never disagree. The
  * parser is unchanged. Record arm's pot is weighedOrComputedPotGramsFor (target-independent).
@@ -87,7 +87,7 @@ export type ResolvedDilution = {
    */
   jar: {
     /** Both jar fields hold a usable figure — paste > 0, water >= 0 (zero water is the pot
-     * before any water at all, Gradual's own starting record, LS:1531), neither a swallowed
+     * before any water at all, where this app starts a record), neither a swallowed
      * thousands separator. This IS `governs === 'record'` for a portion-scope call — the two
      * must never be read as different questions, see the module doc above. */
     hasBothFigures: boolean;

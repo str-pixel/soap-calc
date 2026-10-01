@@ -60,7 +60,7 @@ export const WATER_FIELDS = {
     min: 0.1,
     max: 99.9,
     step: 0.1,
-    help: 'Lye as a percent of the lye-water solution. Higher means less water, a harder bar, and faster trace.',
+    help: 'Lye as a percent of the lye-water solution. Higher means less water, a bar that is harder at unmolding, and faster trace.',
   },
   lye_water_ratio: {
     key: 'lyeWaterRatio',

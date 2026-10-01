@@ -35,3 +35,13 @@ describe('process-aware field choices', () => {
     expect(waterModeChoicesFor('cp')).toContain('percent_of_oils');
   });
 });
+
+test('lye concentration help: low water is harder at unmolding, not a harder cured bar (Sci:3338, Sci:3340)', () => {
+  const help = WATER_FIELDS.lye_concentration.help;
+  // The sourced parts stay: less water, and faster trace.
+  expect(help).toMatch(/less water/);
+  expect(help).toMatch(/faster trace/);
+  // Hardness converged with cure in every soap measured, so the claim is about unmolding.
+  expect(help).toMatch(/harder at unmolding/);
+  expect(help).not.toMatch(/a harder bar,/);
+});

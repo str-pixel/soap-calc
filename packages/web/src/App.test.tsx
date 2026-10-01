@@ -535,8 +535,9 @@ describe('Whole batch, with a record: one batch has one finished mass', () => {
     // The starter LS recipe makes 1,222.15 g of anhydrous soap in a computed 1,666.15 g pot.
     // 1,400 g is a reading in the half of the window whose 2 dp write-back rounds UP:
     // 122215/1400 = 87.2964 → 87.30 → a solution of 1,399.94 g, a hair under the 1,400 g on
-    // the scale. Zero water is not an exotic input — it is the reference's own starting
-    // record (LS:1531).
+    // the scale. Zero water is not an exotic input — it is where this app starts a
+    // record (its own convention; the reference's first figure is the covering water,
+    // LS:1531).
     fireEvent.change(paste, { target: { value: '1400' } });
     fireEvent.change(water, { target: { value: '0' } });
 
@@ -661,8 +662,9 @@ describe('the mid-pour companion dose (spec §3)', () => {
     const expectedCompanion = preservativeDoseGrams(planSolution, 1);
 
     const water = screen.getByLabelText('Water added so far (g)');
-    // 0 g poured is a record (LS:1531: the pot before any water at all is Gradual's own
-    // starting entry) — the record now governs, and its water (0) is strictly below the
+    // 0 g poured is a record (the pot before any water at all — this app's convention,
+    // not the reference's, whose first figure is the covering water, LS:1531) — the record
+    // now governs, and its water (0) is strictly below the
     // plan's own dilution water, so the companion belongs on screen.
     fireEvent.change(water, { target: { value: '0' } });
     // The plan phrase lives in the dt now (one announcement, bare-weight dd — the
@@ -721,7 +723,7 @@ describe('the mid-pour companion dose (spec §3)', () => {
     // stretched by the gradual write-back's own 2 dp rounding, 100·anhydrous/(30 − 0.005) —
     // reached ≈4,074.457 g: a ≈0.68 g band (probe-confirmed, matching the module doc's own
     // "0.68 g at 30%" estimate). A weighed reading of 4,074.2 g sits inside it, and a '0'
-    // record (the pot before any water at all, LS:1531) is exactly the state whose own
+    // record (the pot before any water at all, this app's convention) is exactly the state whose own
     // arithmetic reproduces 30.00% from that reading within the old tolerance — the
     // "coincidental match" the deleted widening existed to absorb.
     //

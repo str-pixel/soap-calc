@@ -126,7 +126,9 @@ export function fragranceOverUsualRange(percent: number | null, process: Additiv
 
 /** "the bar recipes in the cold-process text run 3–6% of oil weight" / "liquid soap takes
  * 0.5–3% of the finished solution, 3% at most, and most oils need only 0.5–1%". The HP panel
- * says the same as the CP one: the hot-process text carries no fragrance figures of its own. */
+ * says the same as the CP one: the hot-process text states no general rate. What it does
+ * carry sits inside this range — worked recipes at 3% and 5%, and a calculator field that
+ * recommends 3% (its recipe screenshots, p236, p246, p305-306). */
 export function usualDoseClause(process: AdditiveProcess): string {
   const { low, high, start } = USUAL_DOSE_RANGE_PERCENT[process];
   return process === 'ls'

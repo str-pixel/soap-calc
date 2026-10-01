@@ -57,7 +57,8 @@ import { roundScaled } from './numeric.js';
  * above anything a bar carries (geranium, cedarwood) is carried, and the panel says so
  * rather than printing it as safe use.
  * The books carry the soaping behaviour and none of the chemistry: clove and cinnamon
- * "contain chemical constituents" that accelerate trace and irritate (CP:9531-9538), and
+ * "contain chemical compounds that will react with the lye and act as an accelerant"
+ * (CP:9531-9538), cinnamon's are named as potential skin irritants (CP:9551-9553), and
  * cinnamon EO is advised against in soap outright (CP:9589-9592).
  */
 
@@ -90,7 +91,7 @@ export type EssentialOilEntry = {
   /** The dose the cold-process text itself puts on this oil — a recipe's, or the rate it
    * quotes — as a percent of total oil weight, with the line. The starting dose reads it. */
   bookDose?: { percent: number; source: string };
-  /** Accelerates trace and irritates skin (CP:9531-9538). */
+  /** Accelerates trace (CP:9531-9538) and irritates skin (CP:9551-9553). */
   accelerates?: true;
   /** Anything the books say about this oil in soap, in the app's own words. */
   note?: string;
@@ -279,7 +280,7 @@ export const ESSENTIAL_OIL_CATALOG: readonly EssentialOilEntry[] = [
     // a natural constituent up to 0.01% of the product by IFRA's notebox and by EU Annex
     // II/360 alike, → 5%. Leaf oil is a different material (eugenol 74%, safrole 1.2%); the
     // entry is the bark. The text puts cinnamon bark's usual suggested rate at 0.1% and
-    // advises against the oil in soap outright (CP:9596-9600).
+    // advises against the oil in soap outright (CP:9589-9591).
     constituents: [
       { substance: 'Cinnamal', percentOfOil: 75 },
       { substance: 'Eugenol', percentOfOil: 2 },

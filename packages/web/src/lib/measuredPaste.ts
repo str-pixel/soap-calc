@@ -173,8 +173,9 @@ export function parseMeasuredPasteGrams(measuredPasteGrams: string | undefined):
  * ceiling — gone along with the write-back that earned it (Phase 3, spec §5).
  *
  * `>= 0`, unlike {@link parseMeasuredPasteGrams}'s `> 0`: ZERO IS A RECORD. The pot before any
- * water at all is Gradual Dilution's own starting entry (LS:1531) and it writes a target like
- * any other. Blank is not zero — `Number('')` is 0, so the trim has to answer first, or an
+ * water at all is where this app starts a Gradual Dilution record — its convention; the
+ * reference's first figure is the water that covers the paste (LS:1531) — and it writes a
+ * target like any other. Blank is not zero — `Number('')` is 0, so the trim has to answer first, or an
  * untouched field would read as a record of nothing poured.
  *
  * THE SWALLOWED SEPARATOR IS NOT A RECORD, judged by the same fingerprint the measured-paste
@@ -237,9 +238,9 @@ export function parseGradualWaterRecordGrams(
  *
  * Nothing writes that derivation any more (Phase 2a), so the loop is gone — but the reason
  * the basis must stay target-independent is not, and it is the sentence above the loop
- * rather than the loop itself. The record's own first entry is the pot before any water at
- * all (LS:1531), where solution and reading are the same number by construction, so the
- * circularity is at its sharpest in the state the reference starts from.
+ * rather than the loop itself. The record's first entry, by this app's convention, is the pot
+ * before any water at all, where solution and reading are the same number by construction,
+ * so the circularity is at its sharpest in the state a record starts from.
  *
  * The ceiling is not weakened anywhere it means something. {@link measuredPasteIsValidFor}
  * still applies it exactly for the portion and for the copy that speaks in the maker's voice
@@ -508,7 +509,7 @@ export function measuredPasteRejectionFor(
  * The accept-gate IS {@link measuredPasteIsValidFor} — one call, not a parallel copy, so a
  * rule added there reaches this pot by construction. No widening on top of it. A gradual
  * record's own 2 dp write-back used to round `solutionGrams` a hair under a weighed pot with
- * no water recorded (gradual's own opening state, LS:1531), which split the panel from the
+ * no water recorded (the app's opening state for a gradual record), which split the panel from the
  * mass it doses — a weighed 1,405 g pot against a 1,600 g computed one had the panel print
  * 1,405 g while the bottled figure came back 1,600 g, giving one batch two masses, a finished
  * volume from the larger, and a preservative dose (legally capped, EU Annex V) taken against

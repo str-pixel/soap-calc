@@ -1,5 +1,6 @@
 /** Poured-soap fill-density proxy (olive-oil based), g/cm³ — a VERIFIED constant from the
- * CP source's mold-sizing material (roadmap: Confirmed, CP 433/560; ls-yield.ts cites it
+ * CP source's mold-sizing material (CP:12480-12494, pp433-434: a 2430 cm³ mold "will hold
+ * approximately 2235.6g", which is 0.92 g/cm³; ls-yield.ts cites it
  * as the verified sibling of its own estimated solution density). Used for volume↔mass
  * conversions by mold sizing and by the HP vessel guard; the vessel guard's call site
  * carries its own direction-of-error analysis, since raw cook batter runs denser (~1.0). */

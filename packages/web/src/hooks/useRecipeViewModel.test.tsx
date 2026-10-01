@@ -199,7 +199,7 @@ test('dilution: computed for LS, null for CP, null (no crash) for an empty LS re
 test('dilutionGoverns/dilutionRecord: blank record is the plan arm; a 0 g record still governs, and dilution stays the plan object', () => {
   // Spec §1's resolution rule, exposed on the vm (Task 1): a blank gradualWaterGrams is no
   // record at all ('plan', record null); '0' IS a record (ZERO IS A RECORD — the pot before
-  // any water is poured is Gradual's own starting entry) and must govern with waterGrams: 0,
+  // any water is poured is where this app starts a record) and must govern with waterGrams: 0,
   // not be mistaken for "blank". `dilution` itself is unchanged by this task — still the plan
   // arm — consumers move onto the resolved arm in Task 2.
   let blank: any;

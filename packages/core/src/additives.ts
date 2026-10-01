@@ -110,8 +110,9 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
       // (LS:1069); sorbitol and honey below carry the identical range for that reason.
       // The 30-HTLS chapter prefers the oils, since a hot lye solution is what browns
       // sugar (LS:2667) — that is why the oils stay a first-class choice here, and why
-      // the note below says when to take them. The 5% ceiling this once carried matched
-      // neither statement; it was HP's.
+      // the note below says when to take them. The 1–5% this once carried is the same
+      // text's figure too — its additives chapter and its 30-minute chapter both print it
+      // (LS:3009, LS:2665) — so 6 is the source's widest rate, not its only one.
       ls: { typicalLow: 1, typicalHigh: 6 },
     },
     note:
@@ -142,9 +143,10 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // LS-ONLY IS DELIBERATE (researched 2026-07-27; pinned by test). Bar soap already
     // makes its own glycerin — 0.77 g per g NaOH, ~7–12% of the finished bar — and adding
     // more gives a soft, sticky bar that dissolves faster in use. Neither the CP nor the HP
-    // source doses it: CP never treats it as an additive at all, and HP names it once as a
-    // "soap solvent" but doses only sugar, then elsewhere recommends AGAINST glycerin for
-    // hot process. The substantial added-glycerin percentages found in the wild (~15–20%,
+    // source doses it: CP never treats it as an additive at all, and HP calls it a "soap
+    // solvent" (HP:9240, HP:11899) but doses only sugar, then in its colorant-solvent
+    // list advises AGAINST glycerin for hot process (HP:11298-11299). The substantial
+    // added-glycerin percentages found in the wild (~15–20%,
     // or Failor's 50–60% soap : 40–50% solvent) belong to TRANSPARENT / melt-and-pour soap
     // — a process this app does not model (no alcohol, no sucrose solution). Adding a
     // CP/HP entry would advertise an LS dose for a different craft.
@@ -161,12 +163,14 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
     // Sorbitol — sugar alcohol with a stronger lather effect than sucrose; same overheat
     // behavior as other sugars. The CP usage-rates passage is explicit that sorbitol takes
-    // "the same suggested usage rates as sugar" (author-tested at 4% CP — the family
-    // ceiling, not the typical range), so this entry mirrors the sugar entry per process —
+    // "the same suggested usage rates as sugar" (CP:10514-10517; author-tested at 4% CP —
+    // the family ceiling, not the typical range), so this entry mirrors the sugar entry per
+    // process —
     // STAGES INCLUDED: the HP recipes list "Sugar/sorbitol in lye water" as one line
     // (HP:9809), and LS names it among the sugar forms it doses together, into the lye
-    // solution or the oils before dilution (LS:1069). A general-chapter 1–5% figure was
-    // previously mistaken for the CP range — it belongs to HP/LS, whose sources both give 1–5.
+    // solution or the oils before dilution (LS:1069). The cold-process text prints a second
+    // sorbitol figure, 1–5% (CP:5790-5792, among the lathering aids of its fatty-acids chapter). This entry follows the
+    // usage-rates passage instead, which keeps sorbitol under the sugar family's tested 4%.
     id: 'sorbitol',
     name: 'Sorbitol',
     typicalLow: 0.5,
@@ -183,7 +187,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // LS sanctions the lye solution, where the citrate forms (LS:3037).
-    // CP/HP stage audit: into the lye solution, 1% of oil (CP:10596-10598; HP:5146-5152).
+    // CP/HP stage audit: into the lye solution, 1% of oil as the salt (CP:10596-10598); HP makes the citrate in the lye from 1-2% citric acid (HP:5146-5152).
     id: 'chelator',
     name: 'Chelator (citrate, gluconate)',
     typicalLow: 1,
@@ -208,7 +212,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // while allowing the LS in-lye chelator route. Does not lower finished-soap pH; copy
     // must never imply it does.
     // LS sanctions the lye solution for the chelator route (LS:3037), or after the cook, which is the lye-excess neutralization this app models separately.
-    // CP/HP stage audit: 1-2% of oil into the lye solution (CP:10596; HP:5148-5150). LS keeps its after-cook neutralization route below.
+    // CP/HP stage audit: 1-2% of oil into the lye solution (CP:5935-5938; HP:5148-5150). LS keeps its after-cook neutralization route below.
     id: 'citric-acid',
     name: 'Citric acid (anhydrous)',
     typicalLow: 1,
@@ -316,7 +320,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // process (LS:2991), which is what the base stage already does, so no LS override is
     // needed. Charcoal's entry above answers to the same line.
     // LS sanctions the oils, right at the start (LS:2991).
-    // CP/HP stage audit: combined with the oils at the start (CP:9912, 17087); HP at the very beginning or after the cook, slurried in water first (HP:11083-11088).
+    // CP/HP stage audit: into the oils before mixing (CP:17573), or premixed with the fragrance at the start of preparation and added with it, at trace in one recipe (CP:9911-9914, CP:17106-17108); HP at the very beginning or after the cook, slurried in water first (HP:11083-11088).
     id: 'clay',
     processOverrides: {
       // LS sanctions the oils only, right at the start (LS:2991).
@@ -343,7 +347,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // Magnesium-bearing salts are the exception and are deliberately absent: they wreck
     // soap rather than harden it (magnesium_salt_scum insight warns on them by name).
     // LS sanctions the lye water or the oils for the cook (LS:2630), or after dilution when it is used to thicken (LS:3091).
-    // CP/HP stage audit: into the oils or the lye water, or on top of the finished soap (CP:10618-10619; HP:11090-11094); 0.5% of oil to unmold a soft bar (CP:10636-10639), dissolved in the water with the sugar before the lye (CP:17606); HP 0.05-1% in the lye solution or straight into the oils (HP:9414-9419).
+    // CP/HP stage audit: into the oils or the lye water, or on top of the finished soap (CP:10618-10619; HP:11090-11094); 0.5% of oil to unmold a soft bar (CP:10636-10639), dissolved in the water with the sugar before the lye (CP:17609); HP 0.05-1% in the lye solution or straight into the oils (HP:9418-9421).
     id: 'salt',
     name: 'Table salt (NaCl)',
     typicalLow: 0.05,
@@ -424,7 +428,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // No LS figure to answer to, and deliberately so: the LS text names EDTA among the
     // common chelators but sends every chelator other than the in-lye citrate route to
     // its own supplier's rate (LS:3037). The range here is that supplier envelope.
-    // CP/HP stage audit: lye water; the CP figure is 0.5% of CURED soap weight (CP:10593), ≈0.6% of oil.
+    // Stage: lye water. Neither bar text stages it; the experimental text adds it to the lye or the water portion (Sci:3244, Sci:3280). The CP figure is 0.5% of CURED soap weight (CP:10593), ≈0.6% of oil.
     id: 'edta',
     name: 'EDTA',
     typicalLow: 0.1,
@@ -519,7 +523,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // Loofah — fibrous exfoliant, ground and blended into the oils.
-    // CP/HP stage audit: ground into the soap base for gentle exfoliation, or whole as decoration (HP:11161-11163; the CP text is silent).
+    // CP/HP stage audit: ground into the soap base for gentle exfoliation, or whole as decoration (HP:11161-11164; CP:10056-10059). The 0.1–0.3% of oil is the cold-process text's own figure (CP:10060-10062).
     id: 'loofah',
     name: 'Loofah',
     typicalLow: 0.1,
@@ -535,7 +539,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
     // Cocoa powder — colorant/aroma. The CP recipe adds it to the oils prior to mixing
     // (CP:17160), 1% of oil (CP recipe table); HP stirs it into warm oil or warm water
-    // (HP:11176-11179), and the HP additive moment is after the cook (HP:9478-9481).
+    // (HP:11176-11179), and the HP additive moment is after the cook (HP:10649-10651).
     // CP/HP ONLY: the LS text never names it.
     id: 'cocoa-powder',
     name: 'Cocoa powder',
@@ -552,11 +556,15 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // Milk powder (goat, coconut). The CP recipes make a slurry in a little reserved water
-    // and add it after thin trace (CP:17757-17759), or blend it into the soft oils
-    // (CP:17612); 1-1.5% of oil (CP:17673 coconut milk powder, milk powder 1.5%). HP treats
+    // and add it after thin trace (CP:17758-17760), or blend it into the soft oils
+    // (CP:17612); 1-1.5% of oil (coconut milk powder 1%, CP:17646; milk powder 1.5%, CP:17738). HP treats
     // every milk as an after-cook addition, warmed (HP:11117-11131). Milk sugars brown and
     // overheat in fresh lye (CP:10453), so it carries the sugars hazard and never defaults
-    // to the lye water. CP/HP ONLY: the LS text never names it.
+    // to the lye water. CP/HP ONLY, and not for want of a source: one liquid-soap recipe
+    // adds powdered goat milk at trace, about 6% of oil, with a heated dilution and a
+    // mandatory preservative (LS:3326-3340). After the cook it is ruled out, by the same
+    // text (milks added after the dilution, LS:3067) and by the owner (user ruling
+    // 2026-09-29). Offering it at trace is an open owner decision; until then it is withheld.
     id: 'milk-powder',
     name: 'Milk powder',
     typicalLow: 1,
@@ -574,7 +582,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
     // Coffee grounds — exfoliant. 2-3% of oil, added at trace (CP:16975, 16996; brewed
     // coffee is a liquid and lives with the split liquids). HP puts grounds in the soap base
-    // or on top (HP:11150-11153); the HP additive moment is after the cook (HP:9478-9481).
+    // or on top (HP:11150-11153); the HP additive moment is after the cook (HP:10649-10651).
     // CP/HP ONLY: the LS text never names it.
     id: 'coffee-grounds',
     name: 'Coffee grounds',
@@ -592,7 +600,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   {
     // Seeds (poppy etc.) — exfoliant/decoration. 1% of oil, added at trace with the clay
     // mixture (CP:17090, 17108); HP adds seeds to the base or on top (HP:11143-11147), after
-    // the cook (HP:9478-9481). CP/HP ONLY: the LS text never names them.
+    // the cook (HP:10649-10651). CP/HP ONLY: the LS text never names them.
     id: 'seeds',
     name: 'Seeds (poppy, etc.)',
     typicalLow: 1,
@@ -611,7 +619,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // ground fine and blended into the soft oils until dispersed, 0.25% of oil each
     // (CP:17614-17615, recipe table) — a single-recipe figure, said plainly. The herbs
     // chapter gives no defined rate (CP:10051). HP adds herbs whole, crushed or as powder,
-    // in the base or as decoration (HP:11097-11102), after the cook (HP:9478-9481).
+    // in the base or as decoration (HP:11098-11102), after the cook (HP:10649-10651).
     // CP/HP ONLY: the LS text rules decorative botanicals out of liquid soap (LS:3067).
     id: 'botanicals',
     name: 'Dried botanicals, ground',
@@ -628,9 +636,11 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
   },
   {
     // Arrowroot powder — fragrance anchor. Blended with the essential oils and set aside
-    // at least 30 minutes before they go in at trace (CP:17605), 1% of oil (CP:17673). It
-    // rides with the fragrance, so in HP it goes in after the cook (HP:10653). CP/HP ONLY:
-    // the LS text never names it.
+    // at least 30 minutes (CP:17605-17606), 1% of oil (CP:17673). That recipe never says
+    // when the blend goes in; trace is where the text's other recipes add their scent
+    // (CP:16777, CP:17106-17108), so the stage is the fragrance's, by inference. In HP the
+    // fragrance goes in after the cook (HP:10635-10638) and the anchor rides with it — the
+    // HP text never names arrowroot. CP/HP ONLY: the LS text never names it.
     id: 'arrowroot',
     name: 'Arrowroot powder',
     typicalLow: 1,
@@ -658,8 +668,8 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     // the free fatty acids it genuinely takes no lye. LS uses it identically (into the
     // hot oils); the LS source doses it in absolute ounces — the % range carries over
     // from the HP use of the same technique.
-    // LS sanctions the hot oils, as an emulsion seed (LS:2559).
-    // CP/HP stage audit: a little previously made soap into the hot oils as an emulsion accelerant (HP:9292-9299).
+    // LS sanctions the hot oils, as an emulsion seed (LS:2560).
+    // CP/HP stage audit: a little previously made soap into the hot oils as an emulsion accelerant (HP:9329-9331).
     id: 'finished-soap',
     name: 'Finished soap (grated or liquid)',
     typicalLow: 0.05,
@@ -669,7 +679,7 @@ export const ADDITIVE_CATALOG: readonly AdditiveCatalogEntry[] = [
     processes: ['hp', 'ls'],
     processOverrides: {
       // DERIVED, and deliberately so: LS gives this one as an absolute — roughly a
-      // quarter to half an ounce of liquid soap into the heated oils (LS:2559) — against
+      // quarter to half an ounce of liquid soap into the heated oils (LS:2560) — against
       // the 16 oz total oil weight every worked recipe in that book formulates on
       // (LS:2090, LS:2739). That is 1.5–3% of oil weight, thirty times the 0.05% floor
       // this was serving LS from the HP seed-soap range. Recorded as a derivation rather

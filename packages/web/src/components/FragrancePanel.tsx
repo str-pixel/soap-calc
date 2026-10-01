@@ -38,12 +38,13 @@ type Props = {
    essential-oil-catalog.ts: IFRA's standards and annex, EU Annex III, the SCCS) — and the
    row says when none is on record. The flashpoint is no soaping limit (CP:9844-9860); HP
    adds the scent after the cook at room temperature, and a stabilizer can thicken the paste
-   (HP:11024-11029); LS proves a new fragrance in a small solution first — almost all cloud
+   (after the cook HP:8518-8520, room temperature HP:11024-11029, the stabilizer
+   HP:11030-11032); LS proves a new fragrance in a small solution first — almost all cloud
    (LS:16991-16998). */
 const PROCESS_COPY: Record<ProcessId, string> = {
   cp: `Dose against total oil weight — ${usualDoseClause('cp')}. Each listed oil's row says what ceiling applies to it in soap, IFRA's or EU law's, or that none does, and warns when a dose is over it. The flashpoint is a shipping figure, not a soaping limit.`,
   hp: `Dose against total oil weight — ${usualDoseClause('hp')}; each listed oil's row says what ceiling applies to it in soap, or that none does. Add it after the cook, at room temperature; a vanilla stabilizer goes into the measured fragrance first and can thicken the paste.`,
-  ls: `Dose against the finished solution — ${usualDoseClause('ls')}. Each listed oil's row says what ceiling applies, or that none does; prove a new fragrance in a small test solution first, most cloud a little.`,
+  ls: `Dose against the finished solution — ${usualDoseClause('ls')}. Each listed oil's row says what ceiling applies, or that none does; prove a new fragrance in a small test solution first, almost all cloud the solution.`,
 };
 
 /* EU labelling, checked 2026-09-08: Annex III of (EC) 1223/2009 names listed allergens above

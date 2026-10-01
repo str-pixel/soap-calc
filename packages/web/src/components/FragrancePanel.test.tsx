@@ -299,3 +299,13 @@ describe('the warning and the safe-use line', () => {
     expect(onChange.mock.calls[0][0].fragrances[0]).toMatchObject({ catalogId: 'clove', percent: '2.5' });
   });
 });
+
+describe('book audit 2026-09-29: LS clouding copy', () => {
+  it('says almost all fragrances cloud the solution, as the source does (LS:16993-16994)', () => {
+    renderPanel(createEmptyScentColor(), 'ls');
+    const copy = screen.getByText(/Dose against the finished solution/).textContent!;
+    expect(copy).toMatch(/small test solution/);
+    expect(copy).toMatch(/almost all cloud the solution/);
+    expect(copy).not.toMatch(/most cloud a little/);
+  });
+});

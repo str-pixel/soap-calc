@@ -8,7 +8,7 @@ import { FORMULATION_PREFERENCE_GUIDE } from './formulation-guide.js';
  * page it contradicts rather than passing quietly.
  *
  * CP:11636-11703 — "Ultimate Guide to Cold Process Soap / Common Soap Quality Ranges", p404
- * HP:4637-4664  — "Ultimate Guide to Hot Process Soap / Average Soap Quality Ranges", p133
+ * HP:4637-4704  — "Ultimate Guide to Hot Process Soap / Average Soap Quality Ranges", p133
  * The two printings carry identical Standard and Preference columns.
  */
 describe('SOAP_PROPERTY_GUIDE matches the books Standard column', () => {

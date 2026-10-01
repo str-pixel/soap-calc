@@ -27,7 +27,7 @@ const has = (input: FormulationAnalysisInput, code: string) =>
 describe('lye-excess warning (negative superfat)', () => {
   it('fires for a negative superfat under CP — as the BAR rule, whose remedy is a bar remedy', () => {
     // A caustic recipe from any caller must still surface guidance; which guidance depends
-    // on the process, because acidifying does not lower a bar's pH (CP:795).
+    // on the process, because the liquid-soap remedy is a post-dilution step a bar lacks.
     expect(has({ ...base, superfatPercent: -2, process: 'cp' }, 'lye_excess_bar')).toBe(true);
     expect(has({ ...base, superfatPercent: -2, process: 'cp' }, 'ls_lye_excess')).toBe(false);
   });
@@ -1822,23 +1822,26 @@ describe('review fixes 2026-09-21: keyword gaps found re-reviewing the branch', 
 });
 
 describe('review fixes 2026-09-21: a lye excess reads differently in a bar than in liquid soap', () => {
-  it('gives a NaOH bar the bar hazard and the bar remedy, not the LS neutralization (CP:3158, CP:3167, CP:795)', () => {
+  it('gives a NaOH bar the bar hazard and the bar remedy, not the LS neutralization (CP:14028-14037, CP:14064-14070)', () => {
     for (const process of ['cp', 'hp'] as const) {
       const out = analyzeFormulation({ ...base, process, superfatPercent: -3 });
       const codes = out.map((i) => i.code);
-      // The LS rule's remedy is the post-DILUTION acidification of liquid soap (LS:1195).
-      // CP:795 is explicit that acidifying a bar does not lower its pH — it frees fatty
-      // acids instead — so that guidance must not reach a bar at all.
+      // The LS rule's remedy is the post-DILUTION acidification of liquid soap (LS:1195),
+      // a step a solid bar does not have — so that guidance must not reach a bar at all.
       expect(codes).not.toContain('ls_lye_excess');
       const bar = out.find((i) => i.code === 'lye_excess_bar');
-      // A lye-heavy bar burns skin (CP:3158); info level understates it.
+      // A lye-heavy bar burns skin (CP:14028-14037); info level understates it.
       expect(bar?.level).toBe('warning');
       // Not the LS remedy: no post-dilution acidification target...
       expect(bar?.message).not.toMatch(/pH 9/);
       expect(bar?.message).not.toMatch(/neutralize the finished soap/i);
-      // ...and it says outright that acid is not the fix here (CP:795).
-      expect(bar?.message).toMatch(/does not lower its pH/i);
-      // The sourced bar remedy instead (CP:3167).
+      // ...and it makes no claim about acid and pH. The cold-process text says acid never
+      // lowers a bar's pH (CP:2639-2649); the experimental text says finished soap can be
+      // acidified and that makers do it to lower pH (Sci:2768, Sci:3850). With the sources
+      // split, the message offers only the sourced remedy.
+      expect(bar?.message).not.toMatch(/lower its pH/i);
+      expect(bar?.message).not.toMatch(/citric acid/i);
+      // The sourced bar remedy instead (CP:14064-14070).
       expect(bar?.message).toMatch(/rebatch/i);
     }
   });
@@ -1897,5 +1900,63 @@ describe('review fixes 2026-09-21: the magnesium filter and its rule judge a lin
       expect(codes).not.toContain('ls_salt_thickening');
       expect(codes).not.toContain('hp_thick_phase_suppressant');
     }
+  });
+});
+
+describe('book audit 2026-09-29: extra liquid does not speed trace', () => {
+  it('split_liquid_high_trace_liquid names a softer unmolding, a longer cure and a wetter batter, never faster trace (Sci:3488, Sci:3340)', () => {
+    const out = analyzeFormulation({
+      ...base,
+      superfatPercent: 5,
+      lyeConcentrationPercent: 50,
+      waterLyeRatio: 1,
+      waterGrams: 100,
+      lyeGrams: 100,
+      splitLiquidEnabled: true,
+      splitLiquidGrams: 250,
+      splitLiquidAddAt: 'trace',
+      suggestedLyeWaterGrams: 100,
+      splitLiquidWaterReductionGrams: 0,
+      process: 'cp',
+    });
+    const insight = out.find((i) => i.code === 'split_liquid_high_trace_liquid');
+    // Produced at all, with its sourced consequences: high-water soap is softer when it
+    // leaves the mold and takes longer to lose its moisture, and hardness converges with
+    // cure (Sci:3314, Sci:3321-3324, Sci:3338) — so the softness is dated, not permanent.
+    expect(insight?.message).toMatch(/softer at unmolding/);
+    expect(insight?.message).toMatch(/longer cure/);
+    expect(insight?.message).toMatch(/wetter batter/);
+    expect(insight?.message).not.toMatch(/softer bars/);
+    // ...and without the one the measurements contradict: more water slowed trace.
+    expect(insight?.message).not.toMatch(/faster trace/);
+  });
+});
+
+describe('book audit 2026-09-29: the extra-liquid warning is a bar warning', () => {
+  // Water at the 1:1 minimum, an alternative liquid added at trace, nothing taken off the water.
+  const recipe: FormulationAnalysisInput = {
+    ...base,
+    superfatPercent: 3,
+    lyeConcentrationPercent: 50,
+    waterLyeRatio: 1,
+    waterGrams: 200,
+    lyeGrams: 200,
+    splitLiquidEnabled: true,
+    splitLiquidGrams: 250,
+    splitLiquidAddAt: 'trace',
+    suggestedLyeWaterGrams: 200,
+    splitLiquidWaterReductionGrams: 0,
+  };
+
+  it.each(['cp', 'hp'] as const)('%s still warns', (process) => {
+    expect(has({ ...recipe, process }, 'split_liquid_high_trace_liquid')).toBe(true);
+  });
+
+  it('liquid soap does not: this is the route its source recommends (LS:3055)', () => {
+    const out = analyzeFormulation({ ...recipe, process: 'ls' });
+    // Analysed as liquid soap with a split liquid at all: its own note is there.
+    expect(out.some((i) => i.code === 'ls_split_liquid_not_dilution')).toBe(true);
+    // And the bar warning — softer at unmolding, a longer cure — is not.
+    expect(out.some((i) => i.code === 'split_liquid_high_trace_liquid')).toBe(false);
   });
 });

@@ -119,7 +119,7 @@ export type ComputedScentColor = {
 };
 
 /** The fragrance stage per process: at trace in a bar (CP:16777 "after trace"), after the
- * cook in HP (HP:10653), after dilution in LS (LS:2950, 3363). */
+ * cook in HP (HP:10635-10638), after dilution in LS (LS:3435, LS:3472). */
 export function fragranceStageFor(process: ProcessId): AdditiveStage {
   return process === 'cp' ? 'trace' : 'after_cook';
 }

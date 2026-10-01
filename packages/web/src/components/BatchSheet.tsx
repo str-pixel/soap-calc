@@ -201,8 +201,9 @@ export const BatchSheet = memo(function BatchSheet({ data }: BatchSheetProps) {
   // empty or impossible figure.
   //
   // ZERO IS A RECORD, not a blank (the shared parser's `>= 0`, and its trim before the parse
-  // — see parseGradualWaterRecordGrams): the pot before any water at all is Gradual
-  // Dilution's own starting entry (LS:1531), and the panel's own copy says so in as many
+  // — see parseGradualWaterRecordGrams): the pot before any water at all is where this
+  // app starts a Gradual Dilution record (its own convention; LS:1531 starts from the
+  // covering water), and the panel's own copy says so in as many
   // words — "0 g counts, and is where the record starts" (DilutionPanel's batch ask). While
   // this read `> 0` the page taken to the bench dropped both rows for exactly that record, so
   // a maker who had recorded the starting weight found the screen and the paper disagreeing

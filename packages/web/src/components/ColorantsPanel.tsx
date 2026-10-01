@@ -46,10 +46,11 @@ type Props = {
   onChange: (next: ScentColor) => void;
 };
 
-/** The four things a cold-process colour can be mixed with, in the book's own order of
- * preference: the 1:1 carrier oil first (CP:9394-9400), then the water it also sanctions
- * (CP:18080-18089), then the two mold-side techniques — a 1:2 vein and a dry pencil line
- * (CP:18322-18336). */
+/** The four things a cold-process colour can be mixed with. The book ranks only the first
+ * two: the 1:1 carrier oil "works best" (CP:9394-9400) and water is the alternative it
+ * also sanctions (CP:18080-18089). The two mold-side techniques — a 1:2 vein and a dry
+ * pencil line (CP:18322-18336) — are design steps it never ranks against a solvent; they
+ * come last here by this app's choice. */
 const MIX_OPTIONS: ReadonlyArray<{ value: ColorantMix; cell: string; name: string }> = [
   { value: 'oil', cell: 'In oil', name: 'Mixed into carrier oil' },
   { value: 'water', cell: 'In water', name: 'Mixed into water' },
@@ -120,7 +121,7 @@ const COLORANT_KINDS: Array<{ value: ColorantKind; cell: string; name: string }>
    Reworded, not quoted. */
 const PROCESS_COPY: Record<ProcessId, string> = {
   cp: 'Aim the colour at the bar, not at the wash: overdo it and the pigment travels into the lather and marks the tub, the towels and your skin. One colour for the whole batch goes in with the oils, before the lye; to colour part of the soap batter — the oils and lye already mixed — give that colour its own portion and it goes in at trace. Work each powder into an equal weight of light carrier oil — that oil rides on the recipe as extra superfat.',
-  hp: 'One colour for the whole batch goes in with the oils, before the lye, where the blender can work it through evenly. To colour part of the cooked soap, give that colour its own portion and it goes in after the cook. The solvent is yours to pick: hot sugar water is a common choice and the sugar buys a little extra lather, while oil serves just as well and many makers disperse the colour into the post-cook superfat and add the two together. Glycerin is the one to leave out here.',
+  hp: 'One colour for the whole batch goes in with the oils, before the lye, where the blender can work it through evenly. To colour part of the cooked soap, give that colour its own portion and it goes in after the cook. The solvent is yours to pick: hot sugar water is one option and the sugar buys a little extra lather, while oil serves just as well and many makers disperse the colour into the post-cook superfat and add the two together. Glycerin is the one to leave out here.',
   ls: 'Colour goes in after the dilution, and a water-soluble dye is the one to reach for. Pigments and anything coarse sink to the bottom of the bottle instead — some makers just shake it before use, but it is a hard sell on a shelf in clear plastic. The oils colour the soap too: hemp reads green, red palm anywhere from bright orange to deep red, pumpkin seed brown, so a recipe can arrive coloured before you add a thing.',
 };
 

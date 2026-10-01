@@ -3396,7 +3396,7 @@ describe("the plan row offers the reference's own starting ratios", () => {
     expect(text).toMatch(/others/i);
     expect(text).toMatch(/1:1/);
     expect(text).toMatch(/2:1 or 3:1/);
-    // "The most common ratios are 1:1, 2:1, 3:1" is said of water:LYE (LS:1500) — the same
+    // "The most common water: lye ratios used are a 1:1, 2:1, and 3:1" is said of water:LYE (LS:1500) — the same
     // numerals for a different quantity at a different stage. Nothing calls a water:PASTE
     // ratio common, so this panel must not, in the prose or in the group name.
     expect(text).not.toMatch(/common/i);
@@ -3426,7 +3426,8 @@ describe("the plan row offers the reference's own starting ratios", () => {
     const text = ratioGuidance();
     // The reference's model is a per-recipe MINIMUM dilution (LS:1524 — under it the
     // solution is supersaturated and paste is left over; LS:1603 — every recipe has its
-    // own). LS:1534 gives no mechanism at all for needing more water.
+    // own). LS:1534 gives no dissolving-progress mechanism for needing more water; what it
+    // does give is a recipe one — more soluble soaps need less water to reach the minimum.
     expect(text).toMatch(/minimum/i);
     expect(text).toMatch(/undissolved/i);
     // "expect to add more as the paste dissolves" was invented AND backwards: too little
@@ -3495,8 +3496,9 @@ describe("the plan row offers the reference's own starting ratios", () => {
     // supersaturation with soap left over (LS:1519, LS:1524, LS:1610, LS:2181). "Past that
     // the soap thickens or sets" claimed a viscosity consequence instead: "thickens" is
     // contradicted outright for the case the sentence led with (LS:1657 — coconut-heavy
-    // soaps are thin as milk or juice even AT the minimum), and "sets" is the book's word
-    // for cold dilution water (LS:2277, LS:2370) or NaOH (LS:2679).
+    // soaps are thin as milk or juice even AT the minimum), and "sets" is never the book's word for soap: its
+    // words are "harden", for cold dilution water (LS:2277, LS:2370), and "gelling", for
+    // too much NaOH (LS:2679).
     expect(text).toMatch(/undissolved/i);
     expect(text).toMatch(/lumps/i);
     expect(text).toMatch(/layer/i);
@@ -4383,8 +4385,8 @@ describe('the record field in Whole batch: labelled, empty, and unprompted', () 
 
   it('keeps the ZERO IS A RECORD claim, in the notes where always-true prose lives', () => {
     // The one claim that prompt carried worth keeping: the pot before any water at all is
-    // the reference's own starting entry (LS:1531), and an empty field is not the same
-    // thing. True in every state, which is exactly what the collapsed notes are for.
+    // where this app starts a record — its convention; the reference starts from the water
+    // that covers the paste (LS:1531) — and an empty field is not the same thing. True in every state, which is exactly what the collapsed notes are for.
     render(<DilutionPanel {...G} gradualWaterGrams="" />);
     const note = screen.getByText(/Recording 0 g counts/);
     expect(note.closest('details')).toBeTruthy();

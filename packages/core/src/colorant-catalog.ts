@@ -4,10 +4,14 @@ import type { ColorantKind } from './colorants.js';
 /**
  * The colorant catalog: what a maker can pick instead of typing a name.
  *
- * Families and members come from the cold-process source's own colorant chapter —
- * the four manufactured classes (CP:9264-9291: dyes, pigments, lakes, micas) and the
- * natural list grouped by colour (CP:9339-9366). Behaviour notes are that chapter's
- * warnings, not invention.
+ * Families come from the cold-process source's own colorant chapter — the four
+ * manufactured classes (CP:9264-9310: dyes, pigments, lakes, micas) and the natural list
+ * grouped by colour (CP:9339-9366) — and so do most members. Six members are NOT on that
+ * list: peppermint leaf, cinnamon, molasses, French green clay, black Brazilian clay and
+ * neon pigment. The book is not their source, and the 2026-09-29 audit did not trace where
+ * their rates come from. A behaviour note that is the chapter's own cites it beside the
+ * entry; the chapter's general warnings are that dyes bleed, lakes migrate, micas can morph
+ * and natural colour can discolour (CP:9275-9304, 9367-9374).
  *
  * WHY SOME MATERIALS ARE ALSO ADDITIVES: the source quotes the FDA line that an additive
  * used "for purpose other than coloring", which secondarily produces colour, is not a
@@ -292,7 +296,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     note: 'A bright pigment under a polymer coat, and the coat is why it behaves: it neither bleeds across a swirl nor turns at soap pH, where a bare dye does both. The liquid form is weaker — reckon on three times the dry rate.',
   },
 
-  // --- Blue (CP:9339-9340) ------------------------------------------------------------
+  // --- Blue (CP:9342-9343) ------------------------------------------------------------
   {
     id: 'indigo', name: 'Indigo powder', kind: 'natural', family: 'blue',
     tspPerLbLow: 0.25, tspPerLbHigh: 0.5,
@@ -304,7 +308,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'blue-cambrian-clay', name: 'Blue Cambrian clay', kind: 'natural', family: 'blue', mineral: true, tspPerLbLow: 1, tspPerLbHigh: 2, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: CLAY_LYE_ROUTE_NOTE } },
   { id: 'blue-cornmeal', name: 'Blue cornmeal', kind: 'natural', family: 'blue', tspPerLbLow: null, tspPerLbHigh: null },
 
-  // --- Green (CP:9343-9345) -----------------------------------------------------------
+  // --- Green (CP:9348-9350) -----------------------------------------------------------
   {
     id: 'french-green-clay', name: 'French green clay', kind: 'natural', family: 'green', mineral: true,
     tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable',
@@ -317,7 +321,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'spirulina', name: 'Spirulina', kind: 'natural', family: 'green', tspPerLbLow: 1, tspPerLbHigh: 3, note: 'Plant greens are fugitive. This one holds its green through the cut and the first weeks of the cure, then slides towards olive and settles at a khaki tan; daylight hurries it along and a dark cupboard holds it back. Unless it is going through the lye, wet it in the same weight of water before it goes in.', stability: 'fades', lyeRoute: { note: 'Through the lye it specks less. One source recommends the route and others warn the alkali is what fades it, so prove it before you rely on it.' } },
   { id: 'dandelion-root', name: 'Dandelion root', kind: 'natural', family: 'green', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals' },
 
-  // --- Yellow and orange (CP:9356-9361) ----------------------------------------------
+  // --- Yellow and orange (CP:9358-9361) ----------------------------------------------
   { id: 'annatto', name: 'Annatto', kind: 'natural', family: 'yellow', tspPerLbLow: 0.125, tspPerLbHigh: 1, note: 'The rate above is for the powder added directly. Ground seed is coarse and many makers infuse it into an oil instead, which is a different measurement entirely.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light orange, visibly grainy' }, { tspPerLb: 0.5, colour: 'orange' }, { tspPerLb: 1, colour: 'deep orange' }] },
   { id: 'turmeric', name: 'Turmeric', kind: 'natural', family: 'yellow', tspPerLbLow: 0.03, tspPerLbHigh: 1, note: 'A very little goes a long way. Premix it in oil; it does not disperse in water. It starts to dull within a day or two of the cut, and by around five weeks the powder route can be down to a plain cream. Powder colours harder than an infusion but fades harder too — an infused oil holds longer.', shades: [{ tspPerLb: 0.03, colour: 'soft yellow' }, { tspPerLb: 1, colour: 'burnt orange' }], stability: 'fades' },
   { id: 'calendula', name: 'Calendula petals', kind: 'natural', family: 'yellow', tspPerLbLow: null, tspPerLbHigh: null, alsoAdditiveId: 'botanicals', lyeRoute: { note: 'The petals go into the hot lye solution and stay there, unstrained, straight into the oils with it.' } },
@@ -340,7 +344,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
   { id: 'gromwell-root', name: 'Gromwell root', kind: 'natural', family: 'purple', tspPerLbLow: null, tspPerLbHigh: null },
   { id: 'purple-clay', name: 'Brazilian purple clay', kind: 'natural', family: 'purple', mineral: true, tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: CLAY_LYE_ROUTE_NOTE } },
 
-  // --- Brown (CP:9341-9342) -----------------------------------------------------------
+  // --- Brown (CP:9344-9347) -----------------------------------------------------------
   { id: 'cinnamon', name: 'Cinnamon', kind: 'natural', family: 'brown', tspPerLbLow: 1, tspPerLbHigh: 1, note: 'A light to medium warm brown, and slightly gritty in the bar.', lyeRoute: { note: 'Listed among the botanicals worth trying in the lye solution; no rate is published for that route.' } },
   { id: 'molasses', name: 'Molasses', kind: 'natural', family: 'brown', tspPerLbLow: 0.5, tspPerLbHigh: 1, note: 'Chocolate brown. It is a sugar, so it feeds the lather as well as colouring — and it browns further in a hot batch.' },
   { id: 'marshmallow-root', name: 'Marshmallow root', kind: 'natural', family: 'brown', tspPerLbLow: null, tspPerLbHigh: null },
@@ -355,7 +359,7 @@ export const COLORANT_CATALOG: readonly ColorantCatalogEntry[] = [
     note: 'Betalains do not survive the alkali: this reads brown or tan in soap, never the red it is in the jar.',
   },
 
-  // --- Black (CP:9346) ----------------------------------------------------------------
+  // --- Black (CP:9351) -----------------------------------------------------------------
   { id: 'black-brazilian-clay', name: 'Black Brazilian clay', kind: 'natural', family: 'black', mineral: true, tspPerLbLow: 1, tspPerLbHigh: 2, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: CLAY_LYE_ROUTE_NOTE } },
   { id: 'activated-charcoal', name: 'Activated charcoal', kind: 'natural', family: 'black', mineral: true, tspPerLbLow: 0.125, tspPerLbHigh: 3, alsoAdditiveId: 'charcoal', additiveIsSameMaterial: true, note: 'It marks a soap dish and a washcloth at the darker end, though it washes out.', stability: 'stable', shades: [{ tspPerLb: 0.125, colour: 'light grey' }, { tspPerLb: 0.5, colour: 'medium grey' }, { tspPerLb: 1, colour: 'dark grey, faint grey lather' }, { tspPerLb: 2, colour: 'grey-black' }, { tspPerLb: 3, colour: 'black, noticeably grey lather' }], lyeRoute: { note: 'Through the lye it specks far less than it does at trace, and it needs less than usual to reach the same grey.' } },
   { id: 'dead-sea-mud', name: 'Dead sea mud', kind: 'natural', family: 'black', mineral: true, tspPerLbLow: 1, tspPerLbHigh: 1, alsoAdditiveId: 'clay', stability: 'stable', lyeRoute: { note: CLAY_LYE_ROUTE_NOTE } },
