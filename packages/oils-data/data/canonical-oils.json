@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-09-20T07:07:51.364Z",
+  "generatedAt": "2026-09-29T09:02:47.551Z",
   "methodology": {
     "sapConversion": "mg KOH/g ÷ 1000 = KOH coefficient; mg KOH/g ÷ 1402.5 = NaOH coefficient (ISO 3657 / FNWL)",
     "references": [
@@ -2145,8 +2145,8 @@
       "sapKoh": 0.191,
       "sapNaoh": 0.13618538324420676,
       "sapMgKohPerGram": 191,
-      "iodine": 97,
-      "ins": 94,
+      "iodine": 88,
+      "ins": 103,
       "fattyAcids": {
         "oleic": 75,
         "stearic": 3,
@@ -2183,6 +2183,10 @@
           "source": "cosing",
           "url": "https://ec.europa.eu/growth/tools-databases/cosing/",
           "notes": "INCI \"Corylus Avellana (Hazel) Seed Oil\" verified against the EU CosIng Ingredients Inventory snapshot"
+        },
+        {
+          "source": "manual",
+          "notes": "Corrected: legacy iodine (97) sits above both published ranges for hazelnut oil — Codex CXS 210-1999 (rev. 2019) Table 2 gives 81–95 and the AOCS-attributed band gives 83–90 — while the oil's own profile derives ~88, inside both. Set to 88."
         }
       ],
       "primarySource": "fnwl",
