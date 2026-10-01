@@ -646,7 +646,7 @@ describe('correctedDilutionWaterGrams past the target’s own solution', () => {
 
 describe('parseGradualWaterRecordGrams — is there a record, and is it a scale reading', () => {
   it('takes zero, a poured figure and a padded string, and refuses blanks and junk', () => {
-    // ZERO IS A RECORD (the pot before any water at all, LS:1531); blank is not, or an
+    // ZERO IS A RECORD (the pot before any water at all, this app's convention); blank is not, or an
     // untouched field would read as a record of nothing poured.
     expect(parseGradualWaterRecordGrams('0')).toBe(0);
     expect(parseGradualWaterRecordGrams(' 250 ')).toBe(250);

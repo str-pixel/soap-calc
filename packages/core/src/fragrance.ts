@@ -124,23 +124,26 @@ export function fragranceOverUsualRange(percent: number | null, process: Additiv
   return finite(percent) && percent > USUAL_DOSE_RANGE_PERCENT[process].high;
 }
 
-/** "the bar recipes in the cold-process text run 3–6% of oil weight" / "liquid soap takes
+/** "typical bar recipes run 3–6% of oil weight" / "liquid soap takes
  * 0.5–3% of the finished solution, 3% at most, and most oils need only 0.5–1%". The HP panel
- * says the same as the CP one: the hot-process text carries no fragrance figures of its own. */
+ * says the same as the CP one: the hot-process text states no general rate. What it does
+ * carry sits inside this range — worked recipes at 3% and 5%, and a calculator field that
+ * recommends 3% (its recipe screenshots, p236, p246, p305-306). */
 export function usualDoseClause(process: AdditiveProcess): string {
   const { low, high, start } = USUAL_DOSE_RANGE_PERCENT[process];
   return process === 'ls'
     ? `liquid soap takes ${formatPropertyRangePercent(low, high, 1)} of the finished solution, ${high}% at most, and most oils need only ${formatPropertyRangePercent(low, start, 1)}`
-    : `the bar recipes in the cold-process text run ${formatPropertyRangePercent(low, high)} of oil weight`;
+    : `typical bar recipes run ${formatPropertyRangePercent(low, high)} of oil weight`;
 }
 
-/** The same range as the thing a dose is past: "the 3–6% of oil weight the cold-process
- * text's bar recipes run to". */
+/** The same range as the thing a dose is past: "the 3–6% of oil weight typical bar recipes
+ * run to". Behaviour, not a source: the figures are the bar texts' own recipes (3, 5 and 6%)
+ * and the UI names no text (AGENTS.md: cite behaviour, not sources). */
 export function usualDosePastClause(process: AdditiveProcess): string {
   const { low, high } = USUAL_DOSE_RANGE_PERCENT[process];
   return process === 'ls'
     ? `the ${high}% of the finished solution liquid soap takes at most`
-    : `the ${formatPropertyRangePercent(low, high)} of oil weight the cold-process text's bar recipes run to`;
+    : `the ${formatPropertyRangePercent(low, high)} of oil weight typical bar recipes run to`;
 }
 
 /** "most oils need only 0.5–1% of a liquid soap for a potent scent" — the LS start's reason. */

@@ -1179,8 +1179,8 @@ export function DilutionPanel({
 
               The legend keeps owning the DIRECTION: these read "2:1", and the same tokens mean
               water:lye elsewhere in the app, so the group never restates the relationship on its
-              own. Neither name says "common" — "the most common ratios used are 1:1, 2:1 and 3:1"
-              is said of water:LYE (LS:1500), a different quantity at a different stage. What the
+              own. Neither name says "common" — "The most common water: lye ratios used are a 1:1,
+              2:1, and 3:1" is said of water:LYE (LS:1500), a different quantity at a different stage. What the
               reference does say about these is that they are where makers begin (LS:1534), which
               is what the legend says. */}
           <div
@@ -1878,8 +1878,9 @@ export function DilutionPanel({
         )}
       {/* The jar's own ask, for a HALF-FILLED record: one field typed, the other not, so the
           jar cannot be resolved and nothing on screen would otherwise say why. Zero is named
-          as legitimate on purpose — the pot before any water is the record's own starting
-          entry (LS:1531), and an empty field is not that.
+          as legitimate on purpose — the pot before any water is where this app starts a record
+          (its own convention; LS:1531 starts from the covering water), and an empty field is
+          not that.
 
           NOT for an untouched pair, which is every default Custom amount screen: those two
           fields are labelled, visible and empty, the plan sizing grid is answering beside
@@ -2479,8 +2480,9 @@ export function DilutionPanel({
             claims are AUDITED and the wording is pinned — movable, not rewordable.
             1. ATTRIBUTED, not universal: the reference says some makers begin at 1:1 and
                others at 2:1 or 3:1 depending on the recipe (LS:1534). It never says
-               everyone starts at 1:1, and its own beginner table does not offer 1:1 at
-               all — the lowest row there is 2:1 (LS:2172).
+               everyone starts at 1:1, and its beginner cold-process table does not offer
+               1:1 at all — the lowest row there is 2:1 (LS:2172); its beginner low-temperature
+               table does open at 1:1 (LS:2291).
             2. The fourth preset is accounted for by SOURCE rather than by editorial. It
                was called "a step between those two rather than a starting point of its
                own", which is the opposite of what the one place it appears shows: LS:2172
@@ -2565,9 +2567,10 @@ export function DilutionPanel({
             of an inline prompt beside the water field ("0 g counts, and is where the record
             starts") which rendered whenever that field was empty — an always-on paragraph in
             the panel's commonest state, spending a third of the prose budget to explain a
-            mode that no longer exists. The claim itself is reference: the pot before any
-            water at all is the reference's own starting entry (LS:1531), true in every state,
-            which is precisely what these notes are for. The parser it describes is
+            mode that no longer exists. The claim itself is this app's convention, not
+            the reference's: LS:1531 starts its record from the water that covers the paste,
+            and the app adds the pot before any water at all as the entry before that one. It
+            is true in every state, which is precisely what these notes are for. The parser it describes is
             unchanged (lib/measuredPaste's parseGradualWaterRecordGrams: non-blank and >= 0),
             and it is what decides that a 0 g record governs — so a maker who reads this and
             types 0 gets exactly what it promises. */}
@@ -2623,9 +2626,9 @@ export function DilutionPanel({
           "remaining soap pieces or a white foamy layer on top" (LS:1610), "saturated
           and have remaining soap" (LS:2181). "Thickens" is contradicted outright for
           the case the sentence led with — coconut-heavy soaps are thin as milk or
-          juice even AT the minimum (LS:1657) — and "sets" is attributed to cold
-          dilution water (LS:2277, LS:2370) or NaOH (LS:2679), never to too little
-          water. It was also the belief LS:3585 calls "preconceived (and incorrect)",
+          juice even AT the minimum (LS:1657) — and "sets" is not the book's word at all: it
+          says "harden" of cold dilution water (LS:2277, LS:2370) and "gelling" of too much
+          NaOH (LS:2679), and ties neither to too little dilution water. It was also the belief LS:3585 calls "preconceived (and incorrect)",
           which the ratio-guidance comment above already cites: one panel cited the
           debunking while printing the debunked claim.
           The same-worded overflow sentence follows lsConcentrationAboveAllMinimums,

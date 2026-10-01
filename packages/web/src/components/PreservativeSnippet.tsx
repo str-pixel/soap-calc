@@ -94,7 +94,8 @@ type PreservativeSnippetProps = {
  * ceilings and the dose math live in core's ls-preservatives.ts, where each constant
  * carries its verification citation; the copy
  * here paraphrases the book's need logic (LS:3176–3181 water activity 0.984 diluted vs
- * 0.866 paste; LS:1638 the pH myth; LS:3051/LS:2975 milk, beer and botanicals; LS:3230
+ * 0.866 paste; LS:1638 the pH myth; LS:3051 milk, LS:3228 milk and beer, LS:2975 botanicals and
+ * infusions; LS:3230
  * selling; LS:3228 the personal-batch choice) and the stage rule (after dilution, cooled
  * — LS:2520) without quoting it.
  */
@@ -153,16 +154,18 @@ export function PreservativeSnippet({
           pH protects it" is a named myth (LS:1638). The paste claim carries the book's
           own hedge: 0.866 is reported as NEAR the level that no longer supports growth,
           not safely past it, so the copy says "near the dryness that stops growth" and
-          never calls the paste too dry outright. The three obligation tiers are the
-          book's own: additives make one necessary (LS:3051, LS:2975), selling makes one
-          responsible practice (LS:3230), a small personal batch is the maker's informed
-          choice (LS:3228). */}
+          never calls the paste too dry outright. The obligation tiers are the book's own,
+          at the book's own strength: milk makes one necessary ("will certainly require",
+          LS:3051) and the author uses one with milk or beer (LS:3228); botanicals and
+          infusions are where one "should always be considered" (LS:2975), so the copy says
+          consider, not must; selling makes one responsible practice (LS:3230); a small
+          personal batch is the maker's informed choice (LS:3228). */}
       <p className="results-hint">
         Diluted soap supports mold and bacteria whatever its pH — the paste sits near
         the dryness that stops growth, and dilution moves it well inside the growth
-        range. With milk, beer or botanicals in the recipe a preservative is necessary;
-        if you sell, using one is responsible practice; for a small personal batch used
-        up quickly, it is your informed call.
+        range. With milk or beer in the recipe a preservative is necessary, and botanicals
+        or infusions are a reason to consider one; if you sell, using one is responsible
+        practice; for a small personal batch used up quickly, it is your informed call.
       </p>
       <label className="field">
         {/* The span IS the accessible name (wrapping label, no aria-label) — the same

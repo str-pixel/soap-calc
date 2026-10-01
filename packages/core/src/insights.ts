@@ -114,9 +114,9 @@ export type FormulationAnalysisInput = {
   hpYogurtPercent?: number;
   /** Combined percent of oil weight across sugar-family additives (sugar/sorbitol, honey,
    * yogurt outside HP) — computed by the caller since {@link additiveEntries} carries no
-   * percentages. The ceiling is process-aware: 4% under CP, 5% under HP and LS (an open
-   * cook or high-temp paste tolerates the 1–5% sugar range; an insulated CP mold does
-   * not). Under HP the caller already excludes yogurt from this sum (hp_yogurt_water
+   * percentages. The ceiling is process-aware: 4% under CP, 5% under HP, 6% under LS (an
+   * open cook or high-temp paste tolerates more sugar than an insulated CP mold does; the
+   * figures are each source's own, see the sugar_total_high rule). Under HP the caller already excludes yogurt from this sum (hp_yogurt_water
    * covers it).
    *
    * The figure is always oil-relative regardless of dosing basis: computeRecipeAdditives
@@ -374,10 +374,12 @@ export const INSIGHT_RULES: InsightRule[] = [
     processes: ['cp', 'hp'],
     // The other half of the caustic-bar guard above: no_superfat_margin covers exactly 0%
     // (no buffer), this covers below 0% (an actual excess). Free alkali stays in the
-    // finished bar — burning, redness, itching, scarring, and eye damage (CP:3158) — so it
+    // finished bar — burning, redness, itching, scarring, and eye damage (CP:14028-14037) — so it
     // is a WARNING, not the info-level note liquid soap gets for the same arithmetic.
-    // Remedy is CP:3167's, graded by size: a minor excess cures out as sodium carbonate,
-    // a large one needs a rebatch with added oil. Acidifying is NOT offered (CP:795).
+    // Remedy is CP:14064-14070's, graded by size: a minor excess cures out as sodium carbonate,
+    // a large one needs a rebatch with added oil. Acid is neither offered nor discussed: the
+    // sources split on it (CP:2639-2649 says acid never lowers a bar's pH; Sci:2768 and Sci:3850
+    // say finished soap can be acidified and that makers do it), and neither doses a bar.
     check: (input) => {
       if (input.lyeGrams > 0 && input.superfatPercent < 0) {
         return {
@@ -387,8 +389,7 @@ export const INSIGHT_RULES: InsightRule[] = [
             'This sets more lye than the oils can saponify, so free alkali stays in the finished bar — ' +
             'it can burn, redden or itch skin, and damage eyes. Soda ash that keeps returning after it is ' +
             'rinsed off is the usual sign; zap- or pH-test before any use. A very small excess can cure out ' +
-            'as sodium carbonate and wash away, while a large one needs a rebatch with added oil. Acid does ' +
-            'not fix it: adding citric acid to a bar does not lower its pH, it just frees fatty acids.',
+            'as sodium carbonate and wash away, while a large one needs a rebatch with added oil.',
         };
       }
       return null;
@@ -638,6 +639,17 @@ export const INSIGHT_RULES: InsightRule[] = [
   },
   {
     code: 'split_liquid_high_trace_liquid',
+    // BARS ONLY (owner decision 2026-09-29). In liquid soap, water at 1:1 with the
+    // alternative liquid added at trace is the route the source itself recommends
+    // (LS:3055), that liquid's water is counted against the dilution figure, and there is
+    // no bar to soften or cure. Liquid soap's own split-liquid rules cover it instead
+    // (ls_split_liquid_not_dilution, ls_split_liquid_fat_superfat).
+    processes: ['cp', 'hp'],
+    // Names what extra water costs: a bar that is softer when it leaves the mold and takes
+    // longer to cure (Sci:3314, Sci:3321-3324; hardness converges with cure, Sci:3338), and
+    // a wetter batter. It does NOT promise faster trace: measured, more water slowed the
+    // onset of trace and low-water soap traced faster (Sci:3488, Sci:3340). A sugary liquid
+    // may still speed things up; that is the sugar's doing and the liquid's own note says so.
     check: (input) => {
       if (
         input.splitLiquidEnabled &&
@@ -655,7 +667,7 @@ export const INSIGHT_RULES: InsightRule[] = [
           level: 'warning',
           code: 'split_liquid_high_trace_liquid',
           message:
-            'Water is already at the 1:1 lye minimum — alternative liquid at trace adds extra total liquid. Expect faster trace, softer bars, or a wetter batter.',
+            'Water is already at the 1:1 lye minimum — alternative liquid at trace adds extra total liquid. Expect a bar that is softer at unmolding, a longer cure, or a wetter batter.',
         };
       }
       return null;
@@ -682,16 +694,16 @@ export const INSIGHT_RULES: InsightRule[] = [
     // tunnels/overheats the batch. The MECHANISM (sugar mass relative to oil mass) is
     // process-independent, but the TOLERANCE is not: an insulated CP mold traps the heat
     // (ceiling 4), while an HP open cook runs sugars to ~5 and an LS high-temp paste runs to
-    // 6 — the catalog's own LS range (LS:1069 "between 1-6% Total Oil Weight"); the 1–5%
-    // figures elsewhere in the LS book are its 30-minute-method chapter (LS:2665-2752), a
-    // different process. Under HP the sum upstream already excludes yogurt
+    // 6 — the top of the widest rate the LS text gives (LS:1069 "between 1-6% Total Oil
+    // Weight"). The same text also prints 1–5% — in its additives chapter as well as its
+    // 30-minute chapter (LS:3009, LS:2665) — so 6 is a choice among its figures. Under HP the sum upstream already excludes yogurt
     // (hp_yogurt_water covers it), so the HP copy names only the counted sources; CP/LS
     // keep yogurt in the sum and the copy. See sugarTotalPercent's doc above for how a
     // solution-dosed LS additive still resolves to its true %-of-oil here.
     params: { ceilingPercent: 4, family: 'sugar/sorbitol, honey, yogurt' },
     processOverrides: {
       hp: { ceilingPercent: 5, family: 'sugar/sorbitol, honey' },
-      // LS: the catalog's own LS range for sugar/sorbitol/honey tops out at 6 (LS:1069 "between 1-6% Total Oil Weight"); the 5 this carried until 2026-09-19 was HP's.
+      // LS: the catalog's own LS range for sugar/sorbitol/honey tops out at 6 (LS:1069 "between 1-6% Total Oil Weight"); the 5 this carried until 2026-09-19 is the same text's other figure (LS:3009, LS:2665).
       ls: { ceilingPercent: 6 },
     },
     // The ceiling and additive-family wording are parameterized above; the sentence SHAPE
@@ -895,7 +907,10 @@ export const INSIGHT_RULES: InsightRule[] = [
       const protected_ =
         additiveMatches(input.additiveEntries, 'bht', 'bht') ||
         // The antioxidant is "Rosemary Oleoresin Extract (ROE)" (LS:1018, HP:4871, CP:5566);
-        // the herb and its essential oil are fragrance/botanicals (CP:9941) and protect nothing.
+        // the herb and its essential oil are fragrance/botanicals (CP:9941). The texts credit
+        // essential oils with antioxidant properties in general (HP:11010-11011) but dose only
+        // the extract against rancidity, so only the extract stands this rule down — a rule
+        // design choice, not a sourced verdict on the herb.
         additiveMatches(input.additiveEntries, 'roe', 'roe') ||
         // 'rosemary oleoresin', not bare 'oleoresin': paprika and annatto oleoresin are
         // COLORANTS (colorant-catalog.ts) and protect nothing — a bare keyword let one of
@@ -1118,7 +1133,7 @@ export const INSIGHT_RULES: InsightRule[] = [
   {
     code: 'ls_dual_lye_recommendation',
     processes: ['ls'],
-    // Dual-lye NaOH-share recommender (verified constants, roadmap LS 86): coconut-heavy
+    // Dual-lye NaOH-share recommender (verified constants, LS:2677-2684): coconut-heavy
     // LS benefits from a ~30% NaOH share regardless of current lye type (worth switching to
     // dual lye for), while a low-palmitic+stearic blend that is already dual-lye benefits
     // from a smaller ~0–20% NaOH share. Deliberately silent for a pure-KOH, low-P+S recipe
@@ -1344,9 +1359,9 @@ export const INSIGHT_RULES: InsightRule[] = [
     // the dilution process).
     //
     // LS-gated, though a negative superfat is arithmetically the same in any process,
-    // because the REMEDY is not: CP:795 is explicit that adding an acid to a bar — in the
-    // lye solution, at trace, or in a rebatch — does not lower its pH, it frees fatty acids
-    // instead. A bar at a lye excess is a lye-heavy bar and gets lye_excess_bar below.
+    // because the REMEDY is not: liquid soap is acidified in solution after the dilution
+    // (LS:1195), a step a solid bar does not have. A bar at a lye excess is a lye-heavy bar
+    // and gets lye_excess_bar above, with the bar's own sourced remedy (CP:14064-14070).
     check: (input) => {
       if (input.superfatPercent < 0) {
         return {

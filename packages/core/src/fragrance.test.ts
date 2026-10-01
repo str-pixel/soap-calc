@@ -141,10 +141,10 @@ describe('the usual range, in words, from the one record', () => {
   it('reads the same numbers the verdict and the start use', () => {
     expect(USUAL_DOSE_RANGE_PERCENT.cp).toEqual({ low: 3, high: 6, start: 3 });
     expect(USUAL_DOSE_RANGE_PERCENT.ls).toEqual({ low: 0.5, high: 3, start: 1 });
-    expect(usualDoseClause('cp')).toBe('the bar recipes in the cold-process text run 3–6% of oil weight');
+    expect(usualDoseClause('cp')).toBe('typical bar recipes run 3–6% of oil weight');
     expect(usualDoseClause('hp')).toBe(usualDoseClause('cp'));
     expect(usualDoseClause('ls')).toBe('liquid soap takes 0.5–3% of the finished solution, 3% at most, and most oils need only 0.5–1%');
-    expect(usualDosePastClause('cp')).toBe("the 3–6% of oil weight the cold-process text's bar recipes run to");
+    expect(usualDosePastClause('cp')).toBe('the 3–6% of oil weight typical bar recipes run to');
     expect(usualDosePastClause('ls')).toBe('the 3% of the finished solution liquid soap takes at most');
     expect(lsPotentDoseClause()).toBe('most oils need only 0.5–1% of a liquid soap for a potent scent');
   });

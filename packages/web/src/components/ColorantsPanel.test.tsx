@@ -853,3 +853,15 @@ describe('the mix buttons say what they are', () => {
     }
   });
 });
+
+describe('book audit 2026-09-29: HP solvent copy', () => {
+  it('offers hot sugar water as an option, not as the common choice (HP:11305, HP:8513)', () => {
+    renderPanel(createEmptyScentColor(), 'hp');
+    const copy = screen.getByText(/One colour for the whole batch/).textContent!;
+    // Still named, with its sourced benefit...
+    expect(copy).toMatch(/hot sugar water is one option/i);
+    expect(copy).toMatch(/extra lather/i);
+    // ...but as the author's preference it is not called common.
+    expect(copy).not.toMatch(/common choice/i);
+  });
+});

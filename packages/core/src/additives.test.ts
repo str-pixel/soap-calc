@@ -180,7 +180,8 @@ describe('additive catalog book audit (2026-07-26)', () => {
   it('splits sugar and sorbitol: separate entries, both 0.5–2% base (CP-audited)', () => {
     // id stays 'sugar-sorbitol' so recipes saved before the split still resolve.
     // (Sorbitol's base was 1–5 until the 2026-07-27 sorbitol-vs-ceiling investigation
-    // found that figure belongs to HP/LS; CP is "same as sugar" — see the entry comment.)
+    // chose "same as sugar" (CP:10514-10517) over the 1–5% the same text also prints
+    // for sorbitol (CP:5790-5792) — see the entry comment.)
     const sugar = catalogEntryById('sugar-sorbitol');
     expect(sugar?.name).toBe('Sugar');
     expect(sugar?.typicalLow).toBe(0.5);
@@ -385,8 +386,8 @@ describe('LS dose corrections and new entries (LS audit 2026-07-27)', () => {
   });
 
   it('sugar LS: 1–6% into the lye water, the rate LS gives every sugar form (LS:1069)', () => {
-    // Was 1–5. The 5% ceiling answered to nothing in the LS text: the general rate for
-    // sugars in liquid soap is 1–6% of oil weight (LS:1069), and the 30-HTLS chapter's
+    // Was 1–5, which the same text also prints (LS:3009, LS:2665). The widest rate it
+    // gives for sugars in liquid soap is 1–6% of oil weight (LS:1069), and the 30-HTLS chapter's
     // own 3–5% practice (LS:2667) sits inside it. The lye solution is one of LS's two
     // sanctioned homes (LS:1069) and the default every process shares; the oils stay a
     // first-class choice for the paler result a hot lye solution costs (LS:2667).
@@ -561,7 +562,7 @@ describe('LS defaults answer to the liquid-soap source, not to CP by inheritance
     // Every sugar FORM shares one LS rate — table sugar, honey, molasses, sorbitol — dosed
     // into the lye solution or the oils, before dilution. (LS:1069)
     // Sorbitol mirrors sugar exactly — the HP source lists "Sugar/sorbitol in lye water"
-    // (HP:9809). Honey is the deliberate exception: it browns and overheats, so the
+    // (HP:9809). Honey is the deliberate exception: it browns deeply (LS:3011), so the
     // gentler oils stay its LS home (LS:1069, LS:2667).
     ['sorbitol', 1, 6, 'lye'],
     ['honey', 1, 6, 'oils'],
@@ -570,7 +571,7 @@ describe('LS defaults answer to the liquid-soap source, not to CP by inheritance
     ['chelator', 1, 2, 'lye'],
     ['citric-acid', 1, 2, 'lye'],
     // Finished soap as an emulsion accelerant. DERIVED: the source gives a quarter to half
-    // an ounce into the heated oils (LS:2559) against the 16 oz oil weight its worked
+    // an ounce into the heated oils (LS:2560) against the 16 oz oil weight its worked
     // recipes use (LS:2090, LS:2739). The ounces are the source's; the percentage is ours.
     ['finished-soap', 1.5, 3, 'oils'],
   ])('%s doses %s–%s%% of oil at the %s stage in LS', (id, low, high, stage) => {
@@ -732,7 +733,8 @@ describe('LS offers only the stages its source sanctions', () => {
   });
 
   it('gives each process its own answer where the sources differ — silk is the case', () => {
-    // Into the water before the alkali in a bar (CP:10697, HP:11165); liquid soap has a
+    // Into the water before the alkali in a bar (CP:10697; HP dissolves it in the hot lye
+    // solution, HP:11166-11168); liquid soap has a
     // second route, amino acids into the diluted soap. The CP/HP audit (2026-09-07) gave
     // the bar processes their own lists; no single entry-level list could carry all three.
     const silk = catalogEntryById('silk')!;
@@ -804,27 +806,27 @@ describe('sugar and sorbitol: lye water by default, with the oils and trace besi
 // CP / HP stage audit (2026-09-07). Every entry a bar maker can pick carries the stage its
 // own source names and offers the others only where that process sanctions them — the
 // same treatment the LS audit gave liquid soap. Citations are CP:<line> / HP:<line> into
-// the extracted texts; "practice" marks the one figure the books dose but never stage.
+// the extracted texts; "practice" marks a figure the cold-process text doses but never stages.
 // ---------------------------------------------------------------------------------------
 describe('CP: each additive defaults to its sourced stage and offers only sanctioned ones', () => {
   const cp = (id: string) => effectiveCatalogEntry(catalogEntryById(id)!, 'cp');
   it.each([
     ['chelator', 'lye', ['lye']],                       // CP:10596
-    ['citric-acid', 'lye', ['lye']],                    // CP:10596
-    ['edta', 'lye', ['lye']],                           // CP:10593
+    ['citric-acid', 'lye', ['lye']],                    // CP:5935-5938
+    ['edta', 'lye', ['lye']],                           // dose CP:10593; stage Sci:3244 (no bar text stages it)
     ['cetyl-alcohol', 'trace', ['trace']],              // CP:5817 melted, after trace
     ['charcoal', 'oils', ['oils', 'trace']],            // CP:16777, 8996
-    ['clay', 'oils', ['oils', 'trace']],                // CP:9912
+    ['clay', 'oils', ['oils', 'trace']],                // CP:17573; trace CP:17106-17108
     ['oatmeal', 'oils', ['oils', 'trace', 'top']],      // CP:16837, 17611
     ['honey', 'oils', ['lye', 'oils', 'trace']],        // CP:16837; sugars CP:5790
-    ['salt', 'lye', ['lye', 'oils', 'top']],            // CP:10618, 17606
+    ['salt', 'lye', ['lye', 'oils', 'top']],            // CP:10618, 17609
     ['sodium-lactate', 'lye', ['lye', 'oils', 'trace']], // dose CP:10669; stage: practice
     ['silk', 'lye', ['lye']],                           // CP:10697 into the water before the NaOH
     ['bht', 'oils', ['oils']],                          // CP:5563
     ['roe', 'oils', ['oils']],                          // CP:5563, 17611
     ['titanium-dioxide', 'oils', ['oils', 'lye']],      // dispersible in oil or water (HP:8514)
     ['eugenol', 'oils', ['oils']],                      // CP:10841
-    ['loofah', 'oils', ['oils', 'top']],                // HP:11161 (CP silent)
+    ['loofah', 'oils', ['oils', 'top']],                // HP:11161; CP:10056-10062
   ] as const)('%s', (id, defaultStage, stages) => {
     expect(cp(id).defaultStage).toBe(defaultStage);
     expect(cp(id).stages).toEqual(stages);
@@ -841,14 +843,14 @@ describe('HP: each additive defaults to its sourced stage and offers only sancti
     ['clay', 'oils', ['oils', 'trace', 'after_cook']],             // HP:11083
     ['oatmeal', 'oils', ['oils', 'after_cook', 'top']],            // HP:11108-11116
     ['honey', 'oils', ['lye', 'oils', 'trace', 'after_cook']],     // HP:5033-5040 (sugars)
-    ['salt', 'lye', ['lye', 'oils', 'top']],                       // HP:9414-9417, 11093
+    ['salt', 'lye', ['lye', 'oils', 'top']],                       // HP:9418-9420, 11093
     ['sodium-lactate', 'trace', ['lye', 'trace']],                 // HP:9411 after a thick trace
-    ['silk', 'lye', ['lye']],                                      // HP:11165
+    ['silk', 'lye', ['lye']],                                      // HP:11166-11168
     ['bht', 'oils', ['oils', 'after_cook']],                       // HP:5797 with the PCSF
     ['roe', 'oils', ['oils', 'after_cook']],                       // HP:5797
     ['eugenol', 'oils', ['oils']],                                 // HP:9361
-    ['finished-soap', 'oils', ['oils']],                           // HP:9292
-    ['titanium-dioxide', 'oils', ['oils', 'lye', 'after_cook']],   // HP:8514; colorants after the cook HP:11318-11330
+    ['finished-soap', 'oils', ['oils']],                           // HP:9329-9331
+    ['titanium-dioxide', 'oils', ['oils', 'lye', 'after_cook']],   // HP:8514; colorants after the cook HP:10649-10651
     ['yogurt', 'after_cook', ['after_cook']],                      // HP:9478
   ] as const)('%s', (id, defaultStage, stages) => {
     expect(hp(id).defaultStage).toBe(defaultStage);
@@ -857,15 +859,17 @@ describe('HP: each additive defaults to its sourced stage and offers only sancti
 });
 
 describe('bar-only additives from the CP recipes (2026-09-07), with the HP reference section for their HP stage', () => {
-  // Every figure is a recipe table line or chapter figure from the CP text; the LS text is
-  // silent on all six, so — like cetyl alcohol and titanium dioxide — none is offered there.
+  // Every figure is a recipe table line or chapter figure from the CP text. The LS text is
+  // silent on four (cocoa powder, coffee grounds, seeds, arrowroot), rules out a fifth
+  // (botanicals, LS:3067), and uses the sixth, milk powder, in one recipe (LS:3326-3340).
+  // None is offered there; milk powder's case has its own tests at the end of this file.
   it.each([
     // id, name, low, high, CP default, CP stages, HP default, HP stages
     ['cocoa-powder', 'Cocoa powder', 1, 1, 'oils', ['oils', 'trace'], 'oils', ['oils', 'lye', 'after_cook']],       // CP:17160; HP:11179
-    ['milk-powder', 'Milk powder', 1, 1.5, 'trace', ['trace', 'oils'], 'after_cook', ['after_cook', 'oils']],       // CP:17757, 17612, 17673; HP:11122
+    ['milk-powder', 'Milk powder', 1, 1.5, 'trace', ['trace', 'oils'], 'after_cook', ['after_cook', 'oils']],       // CP:17758-17760, 17612, 17646, 17738; HP:11122
     ['coffee-grounds', 'Coffee grounds', 2, 3, 'trace', ['trace', 'top'], 'after_cook', ['after_cook', 'top']],     // CP:16975, 16996; HP:11150
     ['seeds', 'Seeds (poppy, etc.)', 1, 1, 'trace', ['trace', 'top'], 'after_cook', ['after_cook', 'top']],         // CP:17090, 17108; HP:11144
-    ['botanicals', 'Dried botanicals, ground', 0.25, 0.25, 'oils', ['oils', 'trace', 'top'], 'after_cook', ['after_cook', 'top']], // CP:17614; HP:11097
+    ['botanicals', 'Dried botanicals, ground', 0.25, 0.25, 'oils', ['oils', 'trace', 'top'], 'after_cook', ['after_cook', 'top']], // CP:17614; HP:11098-11101
     ['arrowroot', 'Arrowroot powder', 1, 1, 'trace', ['trace'], 'after_cook', ['after_cook']],                      // CP:17605, 17673; rides with HP fragrance (HP:10653)
   ] as const)('%s', (id, name, low, high, cpDefault, cpStages, hpDefault, hpStages) => {
     const base = catalogEntryById(id)!;
@@ -999,5 +1003,57 @@ describe('packsForProcess', () => {
     expect(packsForProcess('ls').map((p) => p.id)).toEqual(['lather']);
     expect(packsForProcess('hp').map((p) => p.id)).toEqual(['lather', 'fluid-hp']);
     expect(packsForProcess('cp').map((p) => p.id)).toEqual(['lather', 'hard-bar']);
+  });
+});
+
+describe('milk in liquid soap: ruled out after the cook, withheld elsewhere', () => {
+  const MILK = /milk|yogurt/i;
+  const isMilk = (e: { id: string; name: string }) => MILK.test(`${e.id} ${e.name}`);
+
+  it('the matcher finds the milk entries the bar processes offer', () => {
+    // Anchors every absence assertion below: the pattern can match, and the entries exist.
+    expect(catalogEntriesForProcess('cp').filter(isMilk).map((e) => e.id)).toContain('milk-powder');
+    expect(catalogEntriesForProcess('hp').filter(isMilk).map((e) => e.id)).toEqual(
+      expect.arrayContaining(['milk-powder', 'yogurt']),
+    );
+  });
+
+  it('no milk is offered to liquid soap after the cook (user ruling 2026-09-29; LS:3067)', () => {
+    const ls = catalogEntriesForProcess('ls');
+    // The stage exists in liquid soap and has entries, so the absence is a gate.
+    const afterCook = ls.filter((e) => (effectiveCatalogEntry(e, 'ls').stages ?? []).includes('after_cook'));
+    expect(afterCook.length).toBeGreaterThan(5);
+    expect(afterCook.filter(isMilk).map((e) => e.id)).toEqual([]);
+  });
+
+  it('no milk is offered to liquid soap at any other stage either — current state, not a ruling', () => {
+    // One liquid-soap recipe adds powdered goat milk at trace (LS:3326-3340). Whether to
+    // offer that route is an open owner decision; until it is made, nothing is offered.
+    expect(catalogEntriesForProcess('ls').length).toBeGreaterThan(10);
+    expect(catalogEntriesForProcess('ls').filter(isMilk).map((e) => e.id)).toEqual([]);
+  });
+});
+
+describe('open items resolved 2026-10-01', () => {
+  it('the LS citric-acid note says what the acid does after the cook — removes excess lye — and not that pH stays put', () => {
+    const ls = effectiveCatalogEntry(catalogEntryById('citric-acid')!, 'ls');
+    // The note exists and keeps its lye-solution half.
+    expect(ls.note).toMatch(/lye solution/);
+    // After the cook: excess lye is neutralised and the solution settles at soap's own pH
+    // (LS:1216, LS:1232; the Neutralize panel's own 9–10.5 target).
+    expect(ls.note).toMatch(/excess lye/);
+    expect(ls.note).toMatch(/9–10\.5/);
+    expect(ls.note).not.toMatch(/nothing at this dose will/);
+  });
+
+  it('the sorbitol notes do not promise a paler result for moving it off the lye water — sorbitol is the sugar that darkens least', () => {
+    const base = catalogEntryById('sorbitol')!;
+    for (const process of ['cp', 'hp'] as const) {
+      const note = effectiveCatalogEntry(base, process).note!;
+      expect(note).toMatch(/dissolve it in the lye water/i);
+      // CP:10507-10508: sorbitol "is less likely to experience discoloration due to heat".
+      expect(note).toMatch(/less likely than sugar to darken/i);
+      expect(note).not.toMatch(/paler result/);
+    }
   });
 });

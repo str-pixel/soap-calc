@@ -1269,8 +1269,9 @@ describe('the sheet records the water actually poured', () => {
   });
 
   test('a 0 g record is a record, and prints as one', () => {
-    // The pot before any water at all is Gradual Dilution's own starting entry (LS:1531),
-    // and the panel's ask says so outright — "0 g counts, and is where the record starts".
+    // The pot before any water at all is where this app starts a Gradual Dilution record
+    // (its own convention; LS:1531 starts from the covering water), and the panel's ask
+    // says so outright — "0 g counts, and is where the record starts".
     // While this row was gated on `> 0`, that record printed nothing on paper: the screen
     // said the maker had recorded something and the sheet said they had not.
     render(

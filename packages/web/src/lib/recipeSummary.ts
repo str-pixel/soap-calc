@@ -299,8 +299,8 @@ export function buildFullRecipe(input: FullRecipeInput): RecipeSection[] {
   }
 
   // The water those HP colours carry in, said once where the colours are listed. The book
-  // gives the per-colour figure and says it need not count toward the water total unless it
-  // is a large amount (HP:10990-10993) — so the manifest states it and leaves it out.
+  // gives the per-colour figure (HP:11321-11322) and says it need not count toward the water
+  // total unless it is a large amount (HP:10990-10993) — so the manifest states it and leaves it out.
   const waterColours = colorants.filter((c) => c.dispersal.method === 'hot-sugar-water').length;
   if (waterColours > 0) {
     const water = hpColorantWaterGrams(waterColours, null);

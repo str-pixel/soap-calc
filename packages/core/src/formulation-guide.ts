@@ -4,8 +4,8 @@ import type { SoapPropertyName } from './properties.js';
  * A narrower band inside (mostly) the suggested range, for a balanced general-purpose bar.
  * A FORMULATION HINT, NEVER A PASS/FAIL RULE — nothing may compute a verdict from it. The
  * source is one author's stated preference: the books print it beside the Standard column
- * as "Preference" (CP:11636-11703, p404) and, in the hot-process printing, under the heading
- * "My Preference" (HP:4637-4664, p133). A personal preference must not decide whether a
+ * as "Average Preference" (CP:11636-11703, p404) and, in the hot-process printing, under the
+ * heading "My Preference" (HP:4637-4704, p133). A personal preference must not decide whether a
  * maker's recipe reads as wrong; {@link SOAP_PROPERTY_GUIDE} does that.
  *
  * `longevity` is absent because the source table has no longevity row.
@@ -86,9 +86,10 @@ export const FORMULATION_FATTY_ACID_GUIDE = {
   // Trans-C18:1 (elaidic) — ~0% in natural oils; a partially hydrogenated oil carries it (on
   // the lite catalog, 27.5%-hydrogenated soybean reads above 2% at a 10% share). Shown as its
   // own group so its weight isn't hidden inside the saturated total it sums into. Not a fault
-  // either: each book prints a recipe built on it, "Vegetable Shortening: The Perfect Budget
-  // Recipe" (CP:749, HP:643, LS:619), and a Unilever soap-bar patent credits trans fatty acids with "desirable cleaning
-  // as well as the desired bar integrity and hardness" (WO2008055765A1).
+  // either: a Unilever soap-bar patent credits trans fatty acids with "desirable cleaning
+  // as well as the desired bar integrity and hardness" (WO2008055765A1, Description). The
+  // soap texts are no evidence either way: what they carry at CP:749, HP:643 and LS:249 is
+  // the title of a blog article about vegetable shortening, in a list of links, not a recipe.
   trans: { low: 0, high: 2, label: 'Trans (elaidic)' },
 } as const;
 

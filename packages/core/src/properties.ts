@@ -73,8 +73,10 @@ export const SOAP_PROPERTY_LABELS: Record<SoapPropertyName, string> = {
  *   (Soapee, Soapmaking Friend, LyeCalc) and the books reprint it, but that is one figure
  *   propagated, not four findings.
  * - The one range with a stated rationale, DeeAnna Weed's 30-40 "sweet spot", flags the
- *   books' own worked recipes. The books print a longevity for three recipes, reading 27
- *   (CP:13113 p456), 33 (HP:9931 p367) and 26 (HP:10117 p370), and 30-40 flags two of them.
+ *   books' own worked recipes. In their running text the books print a longevity for three
+ *   recipes, reading 27 (CP:13113 p456), 33 (HP:9931 p367) and 26 (HP:10117 p370), and 30-40
+ *   flags two of them. Their recipe screenshots print more, 27 and 22 among them (HP p239,
+ *   p246), and 30-40 flags those too.
  *   The books' two template recipes (HP p360), scored by this app, read 29 and 26 and are
  *   both flagged. Measured over twelve ordinary recipes on the catalog the app loads
  *   (canonical-oils-lite), it flags ten.

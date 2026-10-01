@@ -34,9 +34,10 @@ export type ColorantDispersal =
   /** A pencil line, dusted dry between two pours (CP:18322-18330): no solvent at all. */
   | { method: 'dusted' };
 
-/** How a CP colour is carried into the soap. Cold process only — the HP and LS texts
- * prescribe their own solvent, and the technique passages (veins, pencil lines) are all in
- * the cold-process design chapter. */
+/** How a CP colour is carried into the soap. Cold process only — the LS text steers to
+ * water-soluble colour (LS:13307-13310), the HP text leaves the solvent to the maker
+ * (HP:11296-11298) and the HP copy says so, and the technique passages (veins, pencil
+ * lines) are all in the cold-process design chapter. */
 export type ColorantMix = 'oil' | 'water' | 'vein' | 'dry';
 export const COLORANT_MIX_PROCESSES: readonly AdditiveProcess[] = ['cp'];
 
@@ -118,8 +119,9 @@ export function portionOilGrams(totalOilGrams: number, portionPercent: number | 
   return (totalOilGrams * portionPercent) / 100;
 }
 
-/** The book's rate is for a single-colour soap; each colour is dosed against the oils it
- * actually colours, or a three-way swirl would carry three times the pigment. The rule it
+/** Each colour is dosed against the oils it actually colours, or a three-way swirl would
+ * carry three times the pigment. That rule is this app's: the source gives one general
+ * starting rate and never says how many colours it assumes (CP:9389-9393). The rule it
  * serves is the source's own: colour belongs to the soap rather than the lather, and too
  * much of it migrates into the lather and stains tub, towels and skin (CP:9378-9388).
  * Null = to shade: the maker has not fixed a dose, and both render paths read that. */

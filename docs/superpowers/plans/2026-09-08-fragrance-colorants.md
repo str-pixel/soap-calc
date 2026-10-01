@@ -4,6 +4,8 @@
 > (`supplierMaxPercent`, `fragranceOverSupplierMax`, two insight codes) this plan builds were later
 > removed; each listed oil's ceiling is now resolved from the catalog (`essentialOilCeiling`). Kept as
 > the record of the 2026-09-08 build.
+>
+> **Superseded in part (2026-09-29):** several strings this plan quotes were later corrected by the book-citation audit — the LS fragrance copy ("most cloud a little" → "almost all cloud the solution"), the HP colorant solvent copy, the per-process colorant and additive hints, and the bar fragrance range clause, which now names no source text. Current copy is in the code; the audit record is `2026-09-28-book-audit-corrections.md`.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

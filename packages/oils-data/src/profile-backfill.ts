@@ -164,6 +164,23 @@ export const PROFILE_BACKFILL: Record<string, ProfileBackfill> = {
       '~1.7% (nervonic C24:1, eicosadienoic C20:2 — no keys).',
   },
 
+  'tamanu-oil-kamani': {
+    profile: { oleic: 38.9, linoleic: 30.3, palmitic: 16.1, stearic: 14.4, linolenic: 0.3 },
+    sourceType: 'literature',
+    source:
+      'Calophyllum inophyllum (tamanu) — GC table, PMC 12189715 (Fratianni et al. 2025, ' +
+      'Antioxidants 14(6):661, Table 1: palmitic 15.75, stearic 14.08, oleic 38.13, linoleic ' +
+      '29.77, linolenic 0.25; sums 97.98, normalized). The same paper and table supply borage above.',
+    url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC12189715/',
+    note:
+      'Legacy profile (oleic 34 / linoleic 38 / stearic 13 / palmitic 12) carried a linoleic share ' +
+      'above every published figure found (16–30%) and matched an uncited web table; its derived ' +
+      'iodine (99.6) sat above the AOCS-attributed band (82–98). The measured profile derives ' +
+      '~87, inside the band; iodine is corrected to it in iodine-corrections.ts. SAP 195 kept ' +
+      '(profile-derived 193, within gate). Property shift: hardness +5, conditioning −3 (under ' +
+      'the guard threshold). Stearic varies widely by source (6–35%); 14 is the measured value.',
+  },
+
   'macadamia-nut-oil': {
     profile: { oleic: 59.4, palmitoleic: 19.1, palmitic: 8.6, stearic: 3.5, arachidic: 2.5, eicosenoic: 2.5, linoleic: 2, behenic: 0.9, myristic: 0.8, linolenic: 0.3, erucic: 0.3 },
     sourceType: 'literature',

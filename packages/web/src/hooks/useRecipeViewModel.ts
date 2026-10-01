@@ -314,9 +314,11 @@ export function useRecipeViewModel({
   // an extra in both methods (computeExtrasGrams), so subtract's total is
   // trimmed oils + trimmed lye/water + PCSF — numerically the target oil weight + lye + water.
   // The PCSF oil is deliberately excluded from this dose base in both methods, and the
-  // source treats it the same way: the HP method has the reserve "included as an additive"
-  // after the cook "rather than including it in the oils" (HP:5573), and says the PCSF does
-  // not go into the soap calculator (HP:5707). Its two printed recipes leave the PCSF oil
+  // source treats it the same way: the HP method has the maker "include the PCSF as an
+  // additive" before the pour "rather than including it in the oils" (HP:5573), and says the
+  // PCSF does not go into the soap calculator (HP:5707). Two of the recipes in its running text (which
+  // prints four with a PCSF line: HP:9815, 9883, 10005, 10073; a fifth, the calculator
+  // printout on p246, counts its PCSF INSIDE the total) leave the PCSF oil
   // out of the stated Total Batch Weight — but they leave the sodium lactate and yogurt out
   // too, so what they actually show is that ADDITIVES sit outside that weight, which is the
   // category HP:5573 puts the reserve in. They are NOT evidence for the subtract branch's

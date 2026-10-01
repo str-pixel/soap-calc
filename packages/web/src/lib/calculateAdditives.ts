@@ -131,7 +131,7 @@ export function computeExtrasGrams(
   scentExtrasGrams = 0,
 ): number {
   const additiveGrams = additives.reduce((sum, item) => sum + item.grams, 0);
-  // The PCSF oil is weighed separately in BOTH methods (HP:5563-5566): in subtract mode the
+  // The PCSF oil is weighed separately in BOTH methods (HP:5575, HP:5697-5702): in subtract mode the
   // recipe oils were trimmed to make room for it, so it is still real mass added to the pot.
   const pcsfGrams = postCookSuperfat?.grams ?? 0;
   return additiveGrams + (splitLiquidGrams ?? 0) + pcsfGrams + scentExtrasGrams;

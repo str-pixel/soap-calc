@@ -895,7 +895,7 @@ describe('process packs and hints', () => {
     expect(screen.getByText(/milk|juice/i).textContent).toMatch(/split liquid/i);
   });
 
-  it('HP hint: milk, yogurt, colorants and fragrance go in after the cook', () => {
+  it('HP hint: milk, yogurt, fragrance and portion colours go in after the cook', () => {
     renderPanel('hp');
     expect(screen.getByText(/after the cook/i).textContent).toMatch(/milk/i);
   });
@@ -941,5 +941,62 @@ describe('the offered-stages table and the pack buttons agree with the catalog',
       />,
     );
     expect(screen.queryByText(/not a usual stage/i)).toBeNull();
+  });
+});
+
+describe('panel hints say only what their sources say (book audit 2026-09-29)', () => {
+  const hintText = (process: 'cp' | 'hp' | 'ls') => {
+    const { container } = render(
+      <AdditivesPanel additives={[]} computed={[]} weightUnit="g" process={process} onChange={() => {}} />,
+    );
+    return Array.from(container.querySelectorAll('p.results-hint'))
+      .map((p) => p.textContent?.replace(/\s+/g, ' ').trim() ?? '')
+      .join(' | ');
+  };
+
+  it('HP: fragrance waits for the cook because the lye is spent, not because heat drives scent off', () => {
+    const text = hintText('hp');
+    // The sentence is there at all, and its sourced half survives (HP:9478-9482, 11122-11126).
+    expect(text).toMatch(/go in after the cook/);
+    expect(text).toMatch(/browns milk sugars/);
+    // The sourced reason for the fragrance (HP:10244-10247, HP:8319-8320).
+    expect(text).toMatch(/lye is spent/);
+    // No text says a hot paste drives scent off. The cold-process text rejects the
+    // flash-point and boiling-point versions of that idea for both bar processes
+    // (CP:9844-9866), and the hot-process text says the process holds fragrance longer.
+    expect(text).not.toMatch(/drives off scent/);
+  });
+
+  it('HP: only portion colours wait for the cook; one colour for the whole batch goes in with the oils', () => {
+    const text = hintText('hp');
+    // After the cook is the multi-colour route (HP:10649-10651); a single colour goes into
+    // the oils at the start (HP:11331-11338), which the Colorants panel already says.
+    expect(text).toMatch(/portion colours go in after the cook/);
+    expect(text).toMatch(/single colour for the whole batch goes in with the oils/);
+    expect(text).not.toMatch(/yogurt, colorants and fragrance/);
+  });
+
+  it('CP: the 1–2% rate is beeswax’s alone; candelilla is an oil with no sourced rate', () => {
+    const text = hintText('cp');
+    expect(text).toMatch(/Beeswax is an oil too, at 1–2%/);
+    // Candelilla stays named — it is in the oils list — but carries no figure (CP:9179
+    // doses beeswax only; no source doses candelilla).
+    expect(text).toMatch(/candelilla/);
+    expect(text).not.toMatch(/candelilla[^.;]*1–2%/);
+    expect(text).not.toMatch(/Beeswax and candelilla/);
+  });
+
+  it('LS: the 5–10% fluid-cook dose names lauric or myristic, the only acids its no-paste chapter doses', () => {
+    const text = hintText('ls');
+    expect(text).toMatch(/Free fatty acids/);
+    // LS:2574-2581 doses "Lauric or Myristic" at 5-10%; stearic is a 3-8% thickening
+    // rate elsewhere (LS:1246) and gets no fluid-cook dose.
+    expect(text).toMatch(/lauric or myristic typically at 5–10% of oils for a fluid no-paste cook/);
+  });
+
+  it('HP and CP keep their all-three-acid doses (HP:9281-9284, CP:10784-10790)', () => {
+    expect(hintText('hp')).toMatch(/typically 5–8% of oils for a fluid cook/);
+    cleanup();
+    expect(hintText('cp')).toMatch(/no more than 0\.5–1% of oils as a trace accelerant/);
   });
 });

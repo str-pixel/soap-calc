@@ -188,7 +188,7 @@ describe('the warning and the safe-use line', () => {
     const safe = screen.getByLabelText('Mine safe use').textContent!;
     expect(safe).toMatch(/No ceiling is known for an oil the app does not list/);
     expect(safe).toMatch(/supplier's IFRA certificate/);
-    expect(safe).toMatch(/the bar recipes in the cold-process text run 3–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
+    expect(safe).toMatch(/typical bar recipes run 3–6% of oil weight\. This dose is 2\.3% of the finished bar\./);
   });
 
   it('a row with nothing on it yet says nothing', () => {
@@ -245,7 +245,7 @@ describe('the warning and the safe-use line', () => {
     renderPanel(picked('lavender'), 'cp');
     const safe = screen.getByLabelText('Lavender safe use').textContent!;
     expect(safe).toMatch(/No ceiling applies: none of this oil's restricted constituents comes near its limit in soap/);
-    expect(safe).toMatch(/the bar recipes in the cold-process text run 3–6% of oil weight\. Start at 3% of oil weight — what the cold-process text doses lavender oil at\. This dose is 2\.3% of the finished bar\./);
+    expect(safe).toMatch(/typical bar recipes run 3–6% of oil weight\. Start at 3% of oil weight — what the cold-process text doses lavender oil at\. This dose is 2\.3% of the finished bar\./);
     expect(safe).not.toMatch(/Up to/);
     expect(safe).not.toMatch(/Max in product/);
   });
@@ -256,7 +256,7 @@ describe('the warning and the safe-use line', () => {
     let safe = screen.getByLabelText('Geranium safe use').textContent!;
     expect(safe).toMatch(/No ceiling bites below the usual range: this oil's works out at 15\.8% of the finished bar/);
     expect(safe).toMatch(/IFRA caps geraniol at 2\.8%/);
-    expect(safe).toMatch(/the bar recipes in the cold-process text run 3–6% of oil weight\. Start at 3% of oil weight — the floor of the cold-process text's bar recipes\. This dose is 2\.3% of the finished bar\./);
+    expect(safe).toMatch(/typical bar recipes run 3–6% of oil weight\. Start at 3% of oil weight — the floor of the cold-process text's bar recipes\. This dose is 2\.3% of the finished bar\./);
     expect(safe).not.toMatch(/Up to/);
     cleanup();
     // 30% of the oils is 23% of the fixture bar — past even that ceiling.
@@ -267,7 +267,7 @@ describe('the warning and the safe-use line', () => {
 
   it('warns past the usual range, in the dose basis, whatever the oil', () => {
     renderPanel(picked('lavender', '8'), 'cp');
-    expect(screen.getByText("8% of oil weight is past the 3–6% of oil weight the cold-process text's bar recipes run to — no book or standard stands behind more.").className).toBe('additive-list__hazard');
+    expect(screen.getByText("8% of oil weight is past the 3–6% of oil weight typical bar recipes run to — no book or standard stands behind more.").className).toBe('additive-list__hazard');
     cleanup();
     renderPanel(picked('lavender', '6'), 'cp');
     expect(screen.queryByText(/is past the 3–6%/)).toBeNull();
@@ -277,7 +277,7 @@ describe('the warning and the safe-use line', () => {
     cleanup();
     // A dose typed past 100 keeps its grams and its share — the more absurd, the louder.
     renderPanel(picked('lavender', '150'), 'cp');
-    expect(screen.getByText(/150% of oil weight is past the 3–6% of oil weight the cold-process text's bar recipes run to/)).toBeTruthy();
+    expect(screen.getByText(/150% of oil weight is past the 3–6% of oil weight typical bar recipes run to/)).toBeTruthy();
     // 1500 g against the fixture's fixed 1300 g bar — the share is printed, however absurd
     expect(screen.getByText(/150% of oil weight = 115\.4% of the finished bar\./)).toBeTruthy();
     cleanup();
@@ -297,5 +297,15 @@ describe('the warning and the safe-use line', () => {
     onChange = renderPanel(typed, 'cp');
     fireEvent.change(screen.getByLabelText(/Essential oil for/), { target: { value: 'clove' } });
     expect(onChange.mock.calls[0][0].fragrances[0]).toMatchObject({ catalogId: 'clove', percent: '2.5' });
+  });
+});
+
+describe('book audit 2026-09-29: LS clouding copy', () => {
+  it('says almost all fragrances cloud the solution, as the source does (LS:16993-16994)', () => {
+    renderPanel(createEmptyScentColor(), 'ls');
+    const copy = screen.getByText(/Dose against the finished solution/).textContent!;
+    expect(copy).toMatch(/small test solution/);
+    expect(copy).toMatch(/almost all cloud the solution/);
+    expect(copy).not.toMatch(/most cloud a little/);
   });
 });

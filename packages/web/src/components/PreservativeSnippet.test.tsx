@@ -342,3 +342,13 @@ test('with no plan basis to show, the companion renders nothing — it never fal
   expect(screen.getByText('26 g')).toBeTruthy();
   expect(screen.queryByText(/At your .*% plan/)).toBeNull();
 });
+
+test('the need paragraph grades its cases as the source does (LS:3051, LS:3228, LS:2975)', () => {
+  const { container } = render(<Harness />);
+  const text = (container.textContent ?? '').replace(/\s+/g, ' ');
+  // Milk and beer: necessary (milk "will certainly require" one; the author uses one with either).
+  expect(text).toMatch(/With milk or beer in the recipe a preservative is necessary/);
+  // Botanicals and infusions: the source says one should be considered, not that it is required.
+  expect(text).toMatch(/botanicals or infusions are a reason to consider one/);
+  expect(text).not.toMatch(/milk, beer or botanicals in the recipe a preservative is necessary/);
+});
